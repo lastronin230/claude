@@ -24,20 +24,20 @@ if [ "$max_t" -gt 0 ] 2>/dev/null; then
   done
 
   if [ "$used" -lt 50 ]; then
-    c='\033[38;5;108m'
+    c='\033[32m'
   elif [ "$used" -lt 80 ]; then
-    c='\033[38;5;222m'
+    c='\033[33m'
   else
-    c='\033[38;5;167m'
+    c='\033[31m'
   fi
 
   if [ -n "$branch" ]; then
-    printf "\033[38;5;110m%s\033[0m | ${c}[%s] %s%%/%sk\033[0m | %s (\033[38;5;139m%s\033[0m)" \
+    printf "\033[34m%s\033[0m | ${c}[%s] %s%%/%sk\033[0m | %s (\033[35m%s\033[0m)" \
       "$model" "$bar" "$used" "$max_k" "$project" "$branch"
   else
-    printf "\033[38;5;110m%s\033[0m | ${c}[%s] %s%%/%sk\033[0m | %s" \
+    printf "\033[34m%s\033[0m | ${c}[%s] %s%%/%sk\033[0m | %s" \
       "$model" "$bar" "$used" "$max_k" "$project"
   fi
 else
-  printf "\033[38;5;110m%s\033[0m | %s" "$model" "$project"
+  printf "\033[34m%s\033[0m | %s" "$model" "$project"
 fi
