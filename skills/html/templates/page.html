@@ -1,0 +1,342 @@
+<!doctype html>
+<!-- Скелет html-страницы проекта. Единственное оформление: палитра совпадает с профилем
+     терминала Warm Light. Копируешь целиком, заменяешь {{...}}, наполняешь <main>,
+     неиспользованные блоки удаляешь. Своих css-правил не дописывать — см. skills/html-page.
+     Блок .copybar и <pre hidden> нужны только там, где страницу копируют в трекер (задачи). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .diff{font-family:var(--mono);font-size:13.5px;line-height:1.6;background:var(--code);
+        border-radius:8px;padding:10px 0;margin:0 0 16px;overflow-x:auto}
+  .diff div{padding:0 14px 0 8px;white-space:pre}
+  .diff .add{background:#E2F0DA;box-shadow:inset 3px 0 var(--green)}
+  .diff .del{background:#F8E3DA;box-shadow:inset 3px 0 var(--red)}
+  .diff .sign{display:inline-block;width:16px;color:var(--muted);user-select:none;font-weight:700}
+  .diff .add .sign{color:var(--green)}
+  .diff .del .sign{color:var(--red)}
+  .diff mark{background:#BFDDB2;color:var(--green);border-radius:3px;padding:0 2px;font-weight:600}
+  .diff .del mark{background:#EFC7B7;color:var(--red)}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+  .mock .gone{background:var(--red-bg);color:var(--red);border-radius:3px}
+  .mock .came{background:var(--green-bg);color:var(--green);border-radius:3px}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  /* Чекбоксы прохождения: отметки живут в localStorage браузера, в markdown-копию
+     не попадают (там те же пункты обычным списком). */
+  ul.checks{list-style:none;margin:0 0 16px;padding:0;max-width:68ch}
+  ul.checks li{margin:0}
+  ul.checks label{display:flex;gap:10px;align-items:flex-start;padding:5px 8px;
+                  border-radius:6px;cursor:pointer}
+  ul.checks label:hover{background:var(--panel)}
+  ul.checks input{flex:none;margin:5px 0 0;width:15px;height:15px;accent-color:var(--cyan)}
+  ul.checks input:checked + span{color:var(--muted)}
+  .checkbar{display:flex;gap:12px;align-items:baseline;margin:0 0 10px;font-size:13px;
+            color:var(--muted)}
+  .checkbar button{font:inherit;font-size:12.5px;padding:3px 10px;border-radius:6px;
+                   cursor:pointer;background:var(--panel);color:var(--muted);
+                   border:1px solid var(--line)}
+  .checkbar button:hover{border-color:var(--muted);color:var(--ink)}
+  .checkbar .done{font-variant-numeric:tabular-nums;color:var(--ink)}
+
+  /* Индексная страница: список ссылок на другие страницы каталога. Кликабельна вся строка,
+     а не только заголовок — по списку ходят мышью, попадать в текст ссылки незачем. */
+  ul.index{list-style:none;margin:0 0 16px;padding:0;border-top:1px solid var(--line)}
+  ul.index li{border-bottom:1px solid var(--line)}
+  ul.index a{display:block;padding:11px 14px;text-decoration:none;color:inherit;
+             border-left:3px solid transparent}
+  ul.index a:hover{background:var(--panel);border-left-color:var(--cyan)}
+  ul.index .top{display:flex;gap:12px;align-items:baseline;margin-bottom:2px;
+                font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  ul.index .id{color:var(--cyan)}
+  ul.index .date{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul.index .name{font-size:16px;color:var(--ink)}
+
+  /* Разбор кейса: задача → как пишут → что видит пользователь → почему → как надо → правило.
+     Для обучающих страниц, где ошибка показывается вместе с последствием. Метка .lbl красит
+     только свою подпись, код под ней — pre.bad / pre.good. */
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}    .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)} .lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}   .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+  /* Имя файла над блоком кода — чтобы было видно, куда этот код кладется */
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px}
+  /* Сценарий глазами пользователя: последний пункт — то, что сломалось */
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+  /* Вывод кейса одной строкой */
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  /* Разделитель крупных частей страницы: «Часть I. Механика», «Часть II. Кейсы» */
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+
+  /* Кнопки «скопировать в трекер». Две разные: заголовок — светлая, описание — заливкой.
+     Метка H1 / MD перед подписью, чтобы не путать на ощупь. */
+  .copybar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;align-items:center}
+  .copybar button{font:inherit;font-size:13.5px;padding:6px 13px;border-radius:7px;cursor:pointer;
+    display:inline-flex;align-items:center;
+    background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+  .copybar button::before{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    padding:2px 5px;border-radius:4px;margin-right:8px;background:var(--code);color:var(--muted)}
+  .copybar button[data-copy="md-title"]::before{content:"H1"}
+  .copybar button[data-copy="md-title"]:hover{border-color:var(--muted)}
+  .copybar button[data-copy="md-body"]{background:var(--cyan-bg);color:var(--cyan);border-color:var(--cyan)}
+  .copybar button[data-copy="md-body"]::before{content:"MD";background:#FFFFFF;color:var(--cyan)}
+  .copybar button[data-copy="md-body"]:hover{background:#D6E8E7}
+  .copybar button:active{transform:translateY(1px)}
+  .copybar button[data-done]{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+  .copybar button[data-done]::before{background:#fff;color:var(--green)}
+  .copybar button:disabled{cursor:default}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>{{TITLE}}</h1>
+    <p class="sub">{{одна строка контекста: ветка, экран, задача}}</p>
+
+    <!-- Кнопки копирования: удалить, если страницу не переносят в трекер -->
+    <div class="copybar">
+      <button data-copy="md-title">Заголовок</button>
+      <button data-copy="md-body">Описание</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc"><!-- ссылки на разделы, только для длинной страницы -->
+    </nav>
+    <main>
+      <!-- контент -->
+    </main>
+  </div>
+
+  <footer>{{DD.MM.YYYY}}</footer>
+</div>
+
+<!-- Источник для кнопок копирования: тот же текст в markdown, спецсимволы экранированы
+     (&lt; &gt; &amp;). Держать синхронным с контентом выше. Блоки не отображаются. -->
+<pre hidden id="md-title">{{Заголовок одной строкой, как пойдет в поле «Название» трекера}}</pre>
+<pre hidden id="md-body">{{Тело задачи в markdown: ## Разделы, таблицы, ```блоки кода```}}</pre>
+
+<script>
+  document.querySelectorAll('.copybar button[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = document.getElementById(btn.dataset.copy);
+      if (!src) return;
+      var text = src.textContent.replace(/^\n+|\s+$/g, '');
+      var done = function () {
+        var was = btn.textContent;
+        btn.textContent = 'Скопировано';
+        btn.dataset.done = '1';
+        btn.disabled = true;
+        setTimeout(function () {
+          btn.textContent = was;
+          delete btn.dataset.done;
+          btn.disabled = false;
+        }, 1500);
+      };
+      // file:// в Safari не secure context — там navigator.clipboard недоступен
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) { /* остается выделение */ }
+        ta.remove();
+      }
+    });
+  });
+</script>
+<script>
+  // Отметки прохождения: ключ — хеш текста пункта, поэтому переформулированный пункт
+  // сбрасывается сам. localStorage может быть недоступен (приватный режим) — тогда
+  // чекбоксы просто не запоминаются.
+  (function () {
+    var boxes = [].slice.call(document.querySelectorAll('ul.checks input[type=checkbox]'));
+    if (!boxes.length) return;
+    var store = null;
+    try { store = window.localStorage; } catch (e) { /* недоступен */ }
+
+    function key(box) {
+      var text = box.parentNode.textContent.trim(), hash = 5381;
+      for (var i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+      return 'page_' + (hash >>> 0).toString(36);
+    }
+    function paint() {
+      var done = boxes.filter(function (b) { return b.checked; }).length;
+      var out = document.getElementById('checks-done');
+      if (out) out.textContent = done + ' из ' + boxes.length;
+    }
+    boxes.forEach(function (box) {
+      var k = key(box);
+      if (store) { try { box.checked = store.getItem(k) === '1'; } catch (e) {} }
+      box.addEventListener('change', function () {
+        if (store) {
+          try { box.checked ? store.setItem(k, '1') : store.removeItem(k); } catch (e) {}
+        }
+        paint();
+      });
+    });
+    var reset = document.getElementById('checks-reset');
+    if (reset) reset.addEventListener('click', function () {
+      boxes.forEach(function (box) {
+        box.checked = false;
+        if (store) { try { store.removeItem(key(box)); } catch (e) {} }
+      });
+      paint();
+    });
+    paint();
+  })();
+</script>
+</body>
+</html>
