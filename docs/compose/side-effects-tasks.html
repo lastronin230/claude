@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сайд-эффекты: задание</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  footer a{color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Сайд-эффекты: задание</h1>
+    <p class="sub">Двенадцать сниппетов со сломанным поведением и один экран, который надо написать целиком. Ответы не приложены намеренно: разбор — со мной, после того как решишь сам.</p>
+  </header>
+
+  <main>
+
+  <h2><span class="num">00</span> Как решать</h2>
+
+  <p class="prose">На каждый сниппет — три ответа, письменно, своими словами:</p>
+
+  <ol class="steps">
+    <li><b>Что увидит пользователь.</b> Не «неправильный ключ», а «открыл второй заказ — на экране
+    данные первого». Формулировка через приложение, а не через код, — половина навыка ревью.</li>
+    <li><b>Почему так вышло.</b> Через механизм: вход в композицию, ключи как ключи
+    <code>remember</code>, подписка снапшотов, lifecycle.</li>
+    <li><b>Как чинить.</b> Готовый код замены.</li>
+  </ol>
+
+  <div class="note strict">
+    <span class="tag">Правило игры</span>
+    <p>Сначала без гугла и без статьи — так проверяется, что механизм понят, а не запомнен список
+    рецептов. Не пошло — открывай статью, но помечай, к какому разделу пришлось вернуться: эти разделы
+    и есть твои пробелы.</p>
+  </div>
+
+  <p class="why">В сниппетах встречаются и корректные куски — не каждая строка, которая выглядит
+  непривычно, является багом. Один из двенадцати сниппетов рабочий; найти его — часть задания.</p>
+
+  <h2><span class="num">01</span> Двенадцать сниппетов</h2>
+
+  <ol class="cards">
+
+    <li data-s="y">
+      <div class="head">Детали заказа</div>
+<pre><code>@Composable
+fun OrderDetailsScreen(orderId: Long, viewModel: OrderViewModel) {
+    LaunchedEffect(Unit) {
+        viewModel.loadOrder(orderId)
+    }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    OrderContent(state = state)
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Показ экрана в аналитику</div>
+<pre><code>@Composable
+fun WalletScreen(viewModel: WalletViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    analytics.logScreen(screen = "wallet", cardsCount = state.cards.size)
+    WalletContent(state = state)
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Обновление списка компаний</div>
+<pre><code>@Composable
+fun CompaniesScreen(viewModel: CompaniesViewModel) {
+    val scope = rememberCoroutineScope()
+    scope.launch { viewModel.refresh() }
+
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    CompaniesList(
+        items = state.items,
+        onRefresh = { scope.launch { viewModel.refresh() } }
+    )
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Слушатель сканера</div>
+<pre><code>@Composable
+fun ScannerScreen(scanner: BarcodeScanner, onCode: (String) -&gt; Unit) {
+    LaunchedEffect(scanner) {
+        scanner.addListener { code -&gt; onCode(code) }
+    }
+    CameraPreview()
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Таймер повторной отправки кода</div>
+<pre><code>@Composable
+fun ResendTimer(seconds: Int, onFinished: () -&gt; Unit) {
+    var left by remember { mutableIntStateOf(seconds) }
+
+    LaunchedEffect(onFinished) {
+        while (left &gt; 0) {
+            delay(1_000)
+            left--
+        }
+        onFinished()
+    }
+    Text(text = "Запросить повторно через $left с")
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Сообщение об ошибке</div>
+<pre><code>// ViewModel
+val errorMessage = MutableStateFlow&lt;String?&gt;(null)
+
+// UI
+@Composable
+fun CheckoutScreen(viewModel: CheckoutViewModel, snackbarHostState: SnackbarHostState) {
+    val error by viewModel.errorMessage.collectAsStateWithLifecycle()
+
+    LaunchedEffect(error) {
+        error?.let { snackbarHostState.showSnackbar(message = it) }
+    }
+    CheckoutContent()
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Баланс в шапке</div>
+<pre><code>@Composable
+fun BalanceHeader(viewModel: WalletViewModel) {
+    val balance by produceState(initialValue = 0L) {
+        viewModel.balanceFlow.collect { value = it }
+    }
+    Text(text = balance.toString())
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Подгрузка следующей страницы</div>
+<pre><code>@Composable
+fun OperationsList(state: OperationsUiState, onLoadMore: () -&gt; Unit) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState.firstVisibleItemIndex) {
+        if (listState.firstVisibleItemIndex &gt; state.items.size - 5) {
+            onLoadMore()
+        }
+    }
+    LazyColumn(state = listState) {
+        items(state.items, key = { it.id }) { OperationRow(item = it) }
+    }
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Автосохранение черновика</div>
+<pre><code>@Composable
+fun ReviewEditor(viewModel: ReviewViewModel) {
+    var text by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5_000)
+            viewModel.saveDraft(text)
+        }
+    }
+    TextField(value = text, onValueChange = { text = it })
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Переход после оплаты</div>
+<pre><code>@Composable
+fun PaymentScreen(viewModel: PaymentViewModel, navController: NavController) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isPaid) {
+        if (state.isPaid) {
+            navController.navigate(route = Routes.Success)
+        }
+    }
+    PaymentContent(state = state)
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Показ баннера в ленте (со звездочкой)</div>
+<pre><code>@Composable
+fun FeedList(banners: List&lt;Banner&gt;, onBannerShown: (Long) -&gt; Unit) {
+    LazyColumn {
+        items(banners, key = { it.id }) { banner -&gt;
+            LaunchedEffect(banner.id) { onBannerShown(banner.id) }
+            BannerCard(banner = banner)
+        }
+    }
+}</code></pre>
+    </li>
+
+    <li data-s="y">
+      <div class="head">Экран не гаснет, пока идет игра (со звездочкой)</div>
+<pre><code>@Composable
+fun GameScreen(isPlaying: Boolean) {
+    val window = (LocalContext.current as Activity).window
+
+    DisposableEffect(Unit) {
+        if (isPlaying) window.addFlags(FLAG_KEEP_SCREEN_ON)
+        onDispose { window.clearFlags(FLAG_KEEP_SCREEN_ON) }
+    }
+    GameContent()
+}</code></pre>
+    </li>
+
+  </ol>
+
+  <h2><span class="num">02</span> Практика: экран подтверждения по коду</h2>
+
+  <p class="prose">Собрать целиком, в <code>study/</code>, отдельным проектом или модулем. Экран знакомый
+  по любому приложению: пришел код в SMS, его надо ввести. Он выбран потому, что в нем сходятся все
+  инструменты статьи разом.</p>
+
+  <pre class="ascii"><code>┌──────────────────────────────┐
+│  ←                           │
+│                              │
+│  Введите код из SMS          │
+│  Отправили на +7 999 ***     │
+│                              │
+│   ┌──┐ ┌──┐ ┌──┐ ┌──┐        │  автофокус + клавиатура
+│   │ 4│ │ 8│ │  │ │  │        │  при входе на экран
+│   └──┘ └──┘ └──┘ └──┘        │
+│                              │
+│   Запросить повторно  0:47   │  таймер, переживает поворот
+│                              │
+└──────────────────────────────┘
+        ▲ ошибка — снекбар ровно один раз
+        ▲ успех  — переход ровно один раз</code></pre>
+
+  <h3>Требования</h3>
+
+  <ol class="steps">
+    <li>При входе на экран поле получает фокус, клавиатура открывается сама.</li>
+    <li>Отсчет 60 секунд до активной кнопки «Запросить повторно». Поворот экрана отсчет не сбрасывает и
+    не ускоряет.</li>
+    <li>Как только введены четыре цифры — проверка стартует сама, без кнопки.</li>
+    <li>Пока идет проверка, ввод заблокирован, на кнопке индикатор.</li>
+    <li>Неверный код: снекбар с текстом ошибки, поле очищается, фокус возвращается. Снекбар не
+    повторяется при повороте.</li>
+    <li>Верный код: переход на следующий экран ровно один раз, даже если поворачивать экран в момент
+    перехода.</li>
+    <li>Экран подписан на состояние сети (или любой другой системный слушатель на выбор) и снимает
+    подписку при уходе.</li>
+    <li>Composable не хранит бизнес-данные: код, таймер, состояние запроса — во ViewModel. В композиции
+    остается только то, что имеет смысл лишь на живом экране.</li>
+    <li>Ни одного эффекта без осознанных ключей: на каждый — комментарий из одной строки, почему в
+    скобках именно это.</li>
+  </ol>
+
+  <h3>Чем проверять себя</h3>
+
+  <div class="scroll">
+  <table>
+    <tr><th>Проверка</th><th>Что должно быть</th></tr>
+    <tr><td>Поворот экрана на 30-й секунде</td><td>Таймер продолжает с 30, а не с 60</td></tr>
+    <tr><td>Поворот сразу после ошибки</td><td>Снекбар не показывается второй раз</td></tr>
+    <tr><td>Сворачивание приложения на минуту</td><td>Никаких запросов в фоне; вернулся — состояние на месте</td></tr>
+    <tr><td>Быстрый ввод и стирание цифр</td><td>Проверка не стартует дважды на один код</td></tr>
+    <tr><td>Счетчик рекомпозиций в Layout Inspector</td><td>Ввод цифры не перерисовывает весь экран</td></tr>
+    <tr><td>Уход с экрана во время запроса</td><td>Корутина отменена, коллбэков после ухода нет</td></tr>
+  </table>
+  </div>
+
+  <div class="note ok">
+    <span class="tag">Как сдавать</span>
+    <p>Ответы на сниппеты — текстом, кодом чинить не обязательно, кроме тех, где сам захочешь. Экран —
+    ссылкой на файлы в <code>study/</code>. Разберу по чеклисту из раздела 12 статьи и покажу то, что
+    работает, но развалится на следующем требовании, — это обычно интереснее прямых ошибок.</p>
+  </div>
+
+  </main>
+
+  <footer>10.09.2026 · К статье: <a href="side-effects.html">Сайд-эффекты: где Compose разрешает действовать</a></footer>
+</div>
+</body>
+</html>

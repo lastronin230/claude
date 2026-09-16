@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Surface: механика и восемь кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  footer a{color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}   .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)}.lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}  .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;
+    font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px;text-transform:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Surface: механика и восемь кейсов</h1>
+    <p class="sub">Первая половина — что Surface делает вместо тебя, чем тональная высота отличается от тени и откуда текст внутри берет свой цвет. Вторая — восемь экранов, где это ломается: как пишут, что видит пользователь, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Что это такое</a>
+      <a href="#t2">02 Параметры</a>
+      <a href="#t3">03 Две высоты</a>
+      <a href="#t4">04 Вложенность</a>
+      <a href="#t5">05 Цвет содержимого</a>
+      <a href="#t6">06 Нажимаемый Surface</a>
+      <a href="#t7">07 Что на нем построено</a>
+      <a href="#t8">08 Выбор контейнера</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Тень прямоугольником</a>
+      <a href="#c2">2 Текст в темной теме</a>
+      <a href="#c3">3 Отступ снаружи</a>
+      <a href="#c4">4 Ripple за углами</a>
+      <a href="#c5">5 Кнопка не нажимается</a>
+      <a href="#c6">6 Карточка светлее</a>
+      <a href="#c7">7 Высота без эффекта</a>
+      <a href="#c8">8 Свой вместо готового</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <div class="chips">
+        <span class="chip b">Material 3</span>
+        <span class="chip">androidx.compose.material3</span>
+        <span class="chip">Surface</span>
+      </div>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: что такое Surface</h2>
+        <p>Восемь разделов подряд. К концу будет понятно, за что отвечает этот компонент, какие четыре
+        слоя он рисует и почему текст внутри окрашивается сам. Кейсы во второй части ссылаются на
+        разделы по номерам.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Что это такое</h2>
+
+      <p class="prose"><code>Surface</code> — лист бумаги Material: прямоугольник (или другая форма) с
+      цветом фона, обводкой, тенью и правилом, каким цветом рисовать текст и иконки внутри. Сам он
+      ничего не компонует — раскладку делают <code>Column</code>, <code>Row</code>, <code>Box</code>, —
+      но берет на себя шесть работ.</p>
+
+      <pre class="ascii"><code>Surface
+├─ фон              цвет из темы (colorScheme.surface по умолчанию)
+├─ форма            shape: скругление, вырезы; по нему же обрезается содержимое
+├─ обводка          border
+├─ тень             shadowElevation — настоящая тень по оси Z
+├─ тональный слой   tonalElevation — подмешивание оттенка в цвет фона
+└─ цвет содержимого contentColor: Text и Icon внутри берут его сами</code></pre>
+
+      <p class="prose">Тот же результат на <code>Box</code> собирается из четырех модификаторов, и цвет
+      текста все равно приходится задавать руками:</p>
+
+<pre class="bad"><code>// на Box: форма указана трижды, contentColor не существует
+Box(
+    modifier = Modifier
+        .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp))
+        .clip(RoundedCornerShape(16.dp))
+        .background(MaterialTheme.colorScheme.surfaceContainer)
+        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+        .padding(16.dp)
+) {
+    Text(text = "Заголовок", color = MaterialTheme.colorScheme.onSurface)   // цвет вручную
+}</code></pre>
+
+<pre class="good"><code>// на Surface: форма одна, цвет содержимого выводится сам
+Surface(
+    shape = RoundedCornerShape(16.dp),
+    color = MaterialTheme.colorScheme.surfaceContainer,
+    shadowElevation = 6.dp,
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+) {
+    Text(text = "Заголовок", modifier = Modifier.padding(16.dp))            // цвет уже правильный
+}</code></pre>
+
+      <p class="why">Разница не в длине. На <code>Box</code> форма указана в трех местах — в
+      <code>shadow</code>, <code>clip</code> и <code>border</code>; рассинхрон между ними дает тень
+      прямоугольником под скругленной карточкой (кейс 1). <code>Surface</code> берет форму один раз и
+      применяет ко всем четырем слоям.</p>
+
+      <h2 id="t2"><span class="num">02</span> Параметры и их значения по умолчанию</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr>
+        <tr><td class="mono">modifier</td><td class="mono">Modifier</td>
+            <td>Размеры и внешние отступы. Внутренний отступ ставится на содержимом, не здесь</td></tr>
+        <tr><td class="mono">shape</td><td class="mono">RectangleShape</td>
+            <td>Форма фона, обводки, тени; по ней же обрезается содержимое</td></tr>
+        <tr><td class="mono">color</td><td class="mono">colorScheme.surface</td><td>Цвет фона</td></tr>
+        <tr><td class="mono">contentColor</td><td class="mono">contentColorFor(color)</td>
+            <td>Цвет, который получат <code>Text</code> и <code>Icon</code> внутри</td></tr>
+        <tr><td class="mono">tonalElevation</td><td class="mono">0.dp</td>
+            <td>Подмешивает оттенок в цвет фона — «высота цветом», без тени</td></tr>
+        <tr><td class="mono">shadowElevation</td><td class="mono">0.dp</td><td>Рисует настоящую тень по форме</td></tr>
+        <tr><td class="mono">border</td><td class="mono">null</td>
+            <td>Обводка <code>BorderStroke</code> по той же форме</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t3"><span class="num">03</span> Две высоты: тональная и теневая</h2>
+
+      <p class="prose">В Material 2 высота была одна — <code>elevation</code>. В Material 3 их две, и
+      они независимы.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th></th><th>tonalElevation</th><th>shadowElevation</th></tr>
+        <tr><td>Что рисует</td><td>подмешивает <code>surfaceTint</code> в цвет фона</td><td>тень под формой</td></tr>
+        <tr><td>Видно в светлой теме</td><td>слабо: оттенок на светлом фоне почти незаметен</td><td>да</td></tr>
+        <tr><td>Видно в темной теме</td><td>да, основной способ отделить слои</td><td>слабо: тень на темном не читается</td></tr>
+        <tr><td>Влияет на цвет фона</td><td>да</td><td>нет</td></tr>
+      </table>
+      </div>
+
+      <div class="note strict">
+        <span class="tag">Ловушка</span>
+        <p>Тональная высота применяется только к цвету <code>colorScheme.surface</code>. Задал свой
+        <code>color</code> — <code>tonalElevation</code> перестает что-либо делать, молча (кейс 7).</p>
+      </div>
+
+      <h2 id="t4"><span class="num">04</span> Вложенные Surface складывают тональную высоту</h2>
+
+      <p class="prose">Каждый <code>Surface</code> публикует накопленную тональную высоту через
+      <code>LocalAbsoluteTonalElevation</code>, и вложенный прибавляет свою к родительской. Смысл —
+      вложенный лист никогда не выглядит ниже того, на котором лежит.</p>
+
+      <pre class="ascii"><code>Surface(tonalElevation = 2.dp)          абсолютная тональная высота = 2.dp
+└─ Surface(tonalElevation = 3.dp)       абсолютная = 2 + 3 = 5.dp  ← цвет считается от 5.dp
+   └─ Surface(tonalElevation = 0.dp)    абсолютная = 5.dp          ← цвет тот же, что у родителя
+
+Тени так не складываются: shadowElevation у каждого свой и рисуется независимо.</code></pre>
+
+      <h2 id="t5"><span class="num">05</span> Откуда берется цвет текста внутри</h2>
+
+      <p class="prose">Тот самый механизм, из-за которого текст на <code>Surface</code> «сам»
+      становится читаемым:</p>
+
+      <ol class="steps">
+        <li><code>Surface</code> берет <code>contentColor</code>. По умолчанию это
+        <code>contentColorFor(color)</code> — поиск парного слота в схеме: <code>surface</code> →
+        <code>onSurface</code>, <code>primary</code> → <code>onPrimary</code>,
+        <code>errorContainer</code> → <code>onErrorContainer</code>.</li>
+        <li>Этот цвет он подставляет в <code>LocalContentColor</code> для всего содержимого.</li>
+        <li><code>Text</code> без параметра <code>color</code> и <code>Icon</code> без
+        <code>tint</code> читают <code>LocalContentColor</code> и красятся в него.</li>
+      </ol>
+
+<pre class="good"><code>// цвет из схемы: парный on-цвет находится сам
+Surface(color = MaterialTheme.colorScheme.primary) {
+    Text(text = "На кнопке")                        // получит onPrimary
+}
+
+// цвет не из схемы: пары нет, contentColor задается явно
+Surface(color = Color(0xFF102A43), contentColor = Color.White) {
+    Text(text = "На своем фоне")
+}</code></pre>
+
+      <h2 id="t6"><span class="num">06</span> Нажимаемый Surface</h2>
+
+      <p class="prose">У <code>Surface</code> есть отдельные перегрузки под взаимодействие. Это не
+      удобство, а необходимость: обычный <code>Surface</code> не обрезает ripple по своей форме.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Перегрузка</th><th>Когда</th><th>Что добавляет</th></tr>
+        <tr><td class="mono">Surface(onClick = …)</td><td>нажимаемый блок: строка списка, плитка</td>
+            <td>ripple по форме, <code>enabled</code>, роль кнопки для доступности</td></tr>
+        <tr><td class="mono">Surface(selected = …, onClick = …)</td><td>выбор одного из нескольких: чип</td>
+            <td>состояние «выбрано» для доступности</td></tr>
+        <tr><td class="mono">Surface(checked = …, onCheckedChange = …)</td><td>переключатель: плитка-тумблер</td>
+            <td>состояние «включено» для доступности</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t7"><span class="num">07</span> Что построено на Surface</h2>
+
+      <p class="prose">Почти все контейнеры Material 3 — это <code>Surface</code> с заранее
+      выставленными параметрами. Поэтому «сделать карточку из Surface» имеет смысл только там, где
+      готового компонента нет.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Компонент</th><th>Чем он является</th></tr>
+        <tr><td class="mono">Card</td><td><code>Surface</code> с формой, цветом и высотами из <code>CardDefaults</code></td></tr>
+        <tr><td class="mono">Button, OutlinedButton</td><td>нажимаемый <code>Surface</code> плюс <code>Row</code> с отступами и типографикой</td></tr>
+        <tr><td class="mono">TopAppBar, NavigationBar</td><td><code>Surface</code> с цветом и высотой своей роли</td></tr>
+        <tr><td class="mono">ModalBottomSheet, AlertDialog</td><td><code>Surface</code> с формой и тенью поверх контента</td></tr>
+        <tr><td class="mono">Scaffold</td><td><code>Surface</code> на весь экран как фон, плюс раскладка слотов</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t8"><span class="num">08</span> Что выбрать: Box, Surface или готовый компонент</h2>
+
+      <pre class="ascii"><code>Нужны ли форма, цвет из темы, тень или автоматический цвет текста?
+│
+├─ НЕТ  → Box: раскладка и, если надо, background одним модификатором
+│
+└─ ДА   → Есть ли готовый компонент Material для этой роли?
+          │
+          ├─ ДА  → Card, Button, TopAppBar, ModalBottomSheet и т.п.
+          │
+          └─ НЕТ → Surface
+                   нажимается → перегрузка с onClick / selected / checked
+                   иначе      → обычный Surface, отступы на содержимом</code></pre>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Восемь кейсов</h2>
+        <p>Задача, код как его пишут, что видно на экране, объяснение через разделы части I и
+        правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Под скругленной карточкой прямоугольная тень</h3>
+        <p class="task">Карточка компании в ленте: скругление 16 dp, легкая тень.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun CompanyCard(company: Company, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .shadow(elevation = 6.dp)                              // форма не указана
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = company.name, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = company.category, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Карточка скруглена правильно</li>
+          <li class="hit">По углам торчат прямоугольные «уши» тени</li>
+          <li class="hit">На темной теме эффект незаметен, поэтому баг доезжает до релиза</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>У <code>shadow</code> своя форма, у <code>clip</code> своя. Контент обрезан по скруглению,
+        а тень нарисована по прямоугольнику — рассинхрон из раздела 01.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun CompanyCard(company: Company, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),          // одна форма на фон, тень и обрезку
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shadowElevation = 6.dp
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = company.name)               // цвет придет из contentColor
+            Text(
+                text = company.category,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Форма задается один раз. Три места для одной формы — гарантия
+        рассинхрона при первой же правке дизайна.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. В темной теме текст сливается с фоном</h3>
+        <p class="task">Блок с промо-условиями на экране акции.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(shape = RoundedCornerShape(12.dp)) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = "Условия акции", color = Color.Black)      // хардкод
+        Text(text = promo.rules, color = Color(0xFF666666))
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>В светлой теме все правильно</li>
+          <li class="hit">В темной — черный текст на темно-сером фоне, читать невозможно</li>
+          <li class="hit">Дизайнер приносит скриншот, разработчик «у себя не воспроизводит» — у него
+          светлая тема</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Фон <code>Surface</code> берется из схемы и переключается вместе с темой, а
+        захардкоженный цвет текста — нет. При этом весь механизм <code>contentColor</code> из раздела
+        05 остался неиспользованным: убери параметр <code>color</code>, и текст сам стал бы
+        <code>onSurface</code>.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(shape = RoundedCornerShape(12.dp)) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = "Условия акции")                                      // onSurface
+        Text(text = promo.rules, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}</code></pre>
+        <p>Свой фон, которого нет в схеме, обязывает задать пару явно:</p>
+<pre class="good"><code>Surface(color = Color(0xFF102A43), contentColor = Color.White) { … }</code></pre>
+
+        <div class="rule"><b>Правило</b>Цвет текста внутри <code>Surface</code> руками не задают, пока
+        фон взят из схемы. Проверка — переключить тему в превью или в настройках устройства.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Отступ есть, а внутри его нет</h3>
+        <p class="task">Плитка бонусной программы: текст должен отстоять от краев на 16 dp.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(
+    modifier = Modifier.padding(16.dp),        // отступ снаружи Surface
+    shape = RoundedCornerShape(16.dp),
+    color = MaterialTheme.colorScheme.surfaceContainer
+) {
+    Text(text = "Ваши бонусы")
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li class="hit">Текст прижат к самым краям карточки</li>
+          <li class="hit">Сама карточка стала меньше и отъехала от соседей</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Модификатор применяется к самому <code>Surface</code>, а не к его содержимому: фон и
+        обводка рисуются <b>внутри</b> отступа. Порядок модификаторов работает как везде в Compose —
+        <code>padding</code> перед фоном уменьшает элемент.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(
+    shape = RoundedCornerShape(16.dp),
+    color = MaterialTheme.colorScheme.surfaceContainer
+) {
+    Text(text = "Ваши бонусы", modifier = Modifier.padding(16.dp))   // отступ на содержимом
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Внешние отступы — на <code>Surface</code>, внутренние — на
+        содержимом.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Волна нажатия вылезает за скругления</h3>
+        <p class="task">Строка списка сертификатов, нажимается целиком.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(
+    shape = RoundedCornerShape(16.dp),
+    modifier = Modifier.clickable { onOpen(certificate.id) }
+) {
+    CertificateRow(certificate = certificate)
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Нажатие работает</li>
+          <li class="hit">Волна ripple заливает прямоугольник, углы подсвечиваются за пределами формы</li>
+          <li class="hit">Отключить строку через <code>enabled</code> нельзя — приходится городить
+          <code>if</code> вокруг обработчика</li>
+          <li class="hit">Скринридер не сообщает, что элемент нажимаемый</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>Modifier.clickable</code> навешен снаружи и про форму <code>Surface</code> не знает.
+        Перегрузка с <code>onClick</code> (раздел 06) обрезает ripple по своей форме и заодно дает
+        <code>enabled</code> и роль для доступности.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(
+    onClick = { onOpen(certificate.id) },
+    shape = RoundedCornerShape(16.dp),
+    enabled = certificate.isActive
+) {
+    CertificateRow(certificate = certificate)
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Нажимаемый <code>Surface</code> — всегда перегрузкой с
+        <code>onClick</code>, а не модификатором.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Кнопка на месте, но не нажимается</h3>
+        <p class="task">Промо-баннер: поверх контента лежит декоративный градиентный слой.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Box {
+    Column {
+        Text(text = banner.title)
+        Button(onClick = { onActivate() }) { Text(text = "Активировать") }
+    }
+    Surface(                                    // декоративный слой поверх
+        modifier = Modifier.matchParentSize(),
+        color = Color.Transparent
+    ) { }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Баннер выглядит как задумано</li>
+          <li class="hit">Кнопка «Активировать» не реагирует на нажатия вообще</li>
+          <li class="hit">В логах пусто, в Layout Inspector кнопка на месте — баг ищут часами</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>Surface</code> перехватывает касания даже без <code>onClick</code> и даже прозрачный:
+        лист бумаги не пропускает нажатия сквозь себя. Это сделано намеренно, чтобы клик не проходил
+        через шторку на контент под ней.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Box {
+    Box(                                        // декорация — Box, а не Surface
+        modifier = Modifier
+            .matchParentSize()
+            .background(brush = promoGradient)
+    )
+    Column {
+        Text(text = banner.title)
+        Button(onClick = { onActivate() }) { Text(text = "Активировать") }
+    }
+}</code></pre>
+        <p>Декоративный слой ушел вниз по порядку и перестал быть <code>Surface</code>. Если слой
+        обязан быть сверху — ему нужен <code>Modifier.pointerInput(Unit) { }</code> с явным пропуском
+        событий или другая композиция.</p>
+
+        <div class="rule"><b>Правило</b>Элемент не реагирует на нажатия — проверь, не лежит ли сверху
+        <code>Surface</code>. Для декораций берется <code>Box</code>.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Вложенная карточка светлее, чем задумано</h3>
+        <p class="task">Карточка заказа, внутри нее — блок доставки на том же уровне.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(tonalElevation = 3.dp, shape = RoundedCornerShape(16.dp)) {
+    Column {
+        OrderHeader(order = order)
+        Surface(tonalElevation = 3.dp, shape = RoundedCornerShape(12.dp)) {   // еще +3
+            DeliveryBlock(delivery = order.delivery)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>В светлой теме разница почти незаметна</li>
+          <li class="hit">В темной блок доставки заметно светлее карточки, хотя по макету они на одном
+          уровне</li>
+          <li class="hit">Чем глубже вложенность, тем светлее: на третьем уровне фон уходит в серый</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Тональные высоты складываются через <code>LocalAbsoluteTonalElevation</code> (раздел 04):
+        внутренний блок считает цвет от 6 dp, а не от 3.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(tonalElevation = 3.dp, shape = RoundedCornerShape(16.dp)) {
+    Column {
+        OrderHeader(order = order)
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,   // слой задан цветом
+            tonalElevation = 0.dp,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            DeliveryBlock(delivery = order.delivery)
+        }
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Вложенным <code>Surface</code> — <code>tonalElevation =
+        0.dp</code>, а слои различать слотами <code>surfaceContainer*</code>.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. tonalElevation не делает ничего</h3>
+        <p class="task">Блок с фирменным цветом фона, дизайнер просит «приподнять» его.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(
+    color = Color(0xFFEFEFEF),        // цвет не из схемы
+    tonalElevation = 8.dp             // молча ничего не делает
+) { … }</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li class="hit">Фон точно такой же, как без <code>tonalElevation</code></li>
+          <li class="hit">Ни ошибки, ни предупреждения — параметр просто игнорируется</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Подмешивание оттенка применяется только к цвету <code>colorScheme.surface</code> (раздел
+        03). Свой цвет — свой и остается.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// вариант 1: взять слот схемы, который и заменяет ступени тональной высоты
+Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh) { … }
+
+// вариант 2: если фон фирменный — отделять тенью, а не тоном
+Surface(color = Color(0xFFEFEFEF), contentColor = Color.Black, shadowElevation = 4.dp) { … }</code></pre>
+
+        <div class="rule"><b>Правило</b>Тональная высота работает только со слотами схемы. Свой цвет —
+        отделяй тенью или бери готовый слот.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Своя карточка вместо готового компонента</h3>
+        <p class="task">Карточка в списке — «как Card, только со своими отступами».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun MyCard(content: @Composable () -&gt; Unit) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),                 // свои дефолты
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp
+    ) { content() }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Сначала совпадает с макетом</li>
+          <li class="hit">После обновления дизайн-системы радиус карточек стал 16 dp — везде, кроме
+          этих</li>
+          <li class="hit">В темной теме фон отличается от соседних карточек: у <code>Card</code> цвет
+          <code>surfaceContainerLow</code>, а тут <code>surface</code></li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Почти все контейнеры Material 3 — это уже <code>Surface</code> с параметрами своей роли
+        (раздел 07). Свой <code>Surface</code> означает свои дефолты, которые живут отдельно от темы и
+        разъезжаются с ней при первом же обновлении.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Card(
+    shape = MaterialTheme.shapes.medium,
+    colors = CardDefaults.cardColors(),
+    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+) { content() }</code></pre>
+        <p>Свой <code>Surface</code> оправдан там, где роли в Material нет: нестандартная плитка,
+        блок с вырезом, элемент собственной дизайн-системы.</p>
+
+        <div class="rule"><b>Правило</b>Сначала ищется готовый компонент, и только если роли нет —
+        <code>Surface</code>.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видно</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Прямоугольная тень под скруглением</td><td>форма задана в нескольких местах</td><td class="num">1</td></tr>
+        <tr><td>Текст не читается в темной теме</td><td>хардкод цвета вместо contentColor</td><td class="num">2</td></tr>
+        <tr><td>Текст прижат к краям карточки</td><td>padding на Surface, а не на содержимом</td><td class="num">3</td></tr>
+        <tr><td>Ripple выходит за скругления</td><td>Modifier.clickable вместо перегрузки</td><td class="num">4</td></tr>
+        <tr><td>Кнопка не реагирует на нажатия</td><td>Surface сверху перехватил касание</td><td class="num">5</td></tr>
+        <tr><td>Вложенный блок светлее нужного</td><td>сложение tonalElevation</td><td class="num">6</td></tr>
+        <tr><td>tonalElevation не дает эффекта</td><td>цвет фона не из схемы</td><td class="num">7</td></tr>
+        <tr><td>Карточки разъехались с дизайн-системой</td><td>свой Surface вместо Card</td><td class="num">8</td></tr>
+      </table>
+      </div>
+
+      <div class="note ok">
+        <span class="tag">Итог</span>
+        <p><code>Surface</code> отвечает на четыре вопроса за раз: какой формы блок, какого он цвета,
+        как отделен от фона и каким цветом писать внутри. Все, что не требует ни одного из этих
+        ответов, — <code>Box</code>. Все, для чего в Material 3 есть роль, — готовый компонент, который
+        внутри и так окажется <code>Surface</code>.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>11.09.2026 · Соседние статьи: <a href="scaffold.html">Scaffold</a> · <a href="side-effects.html">сайд-эффекты</a></footer>
+</div>
+</body>
+</html>

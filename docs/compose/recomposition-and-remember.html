@@ -1,0 +1,1485 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Рекомпозиция и remember: механика и двенадцать кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  footer a{color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}   .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)}.lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}  .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;
+    font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px;text-transform:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Рекомпозиция и remember: механика и двенадцать кейсов</h1>
+    <p class="sub">Первая половина — как Compose устроен внутри: что происходит при изменении данных, где хранится память между прогонами, что дописывает компилятор и почему обновляется больше, чем ждешь. Вторая — двенадцать экранов, на которых это знание проверяется: как пишут, что видит пользователь, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Идея Compose</a>
+      <a href="#t2">02 Состояние</a>
+      <a href="#t3">03 Работа компилятора</a>
+      <a href="#t4">04 Блокнот композиции</a>
+      <a href="#t5">05 Границы перезапуска</a>
+      <a href="#t6">06 Три фазы кадра</a>
+      <a href="#t7">07 Виды remember</a>
+      <a href="#t8">08 Где живет состояние</a>
+      <a href="#t9">09 Стабильность</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Чекбокс не щелкает</a>
+      <a href="#c2">2 Текст и поворот</a>
+      <a href="#c3">3 Сортировка на кадр</a>
+      <a href="#c4">4 Чужие данные</a>
+      <a href="#c5">5 Список не обновился</a>
+      <a href="#c6">6 Экран моргает</a>
+      <a href="#c7">7 Кнопка наверх</a>
+      <a href="#c8">8 Список без key</a>
+      <a href="#c9">9 Пила по Integer</a>
+      <a href="#c10">10 Смерть процесса</a>
+      <a href="#c11">11 Слипшиеся чипы</a>
+      <a href="#c12">12 Нестабильный параметр</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <p class="prose">Знания Compose не требуется, нужен только Kotlin. Парная статья про эффекты —
+      <a href="side-effects.html">сайд-эффекты</a>: там про работу, которая состоянием не является.</p>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: как Compose устроен внутри</h2>
+        <p>Девять разделов подряд, читать по порядку. К концу будет понятно, почему функция
+        перезапускается, что при этом происходит с памятью и какие решения из этого следуют. Кейсы во
+        второй части ссылаются на разделы по номерам.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Идея: UI описывается заново, а не правится по месту</h2>
+
+      <p class="prose">В XML-подходе разметка создается один раз, а дальше правится императивно:
+      нашли вьюху, присвоили текст, спрятали, показали. Экран — это объект, который живет и меняется.</p>
+
+<pre><code>// как это выглядит на View
+binding.textViewName.text = user.name
+binding.imageViewAvatar.isVisible = user.avatarUrl != null
+binding.buttonSubscribe.isEnabled = !user.isSubscribed</code></pre>
+
+      <p class="prose">В Compose нет объекта-вьюхи, которому можно что-то присвоить. Есть функция,
+      которая по текущим данным <b>описывает</b>, как экран должен выглядеть, — и Compose вызывает ее
+      заново, когда данные изменились.</p>
+
+<pre><code>@Composable
+fun UserHeader(user: User, onSubscribe: () -&gt; Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (user.avatarUrl != null) {
+            AsyncImage(model = user.avatarUrl, contentDescription = null)
+        }
+        Text(text = user.name)
+        Button(onClick = onSubscribe, enabled = !user.isSubscribed) {
+            Text(text = "Подписаться")
+        }
+    }
+}</code></pre>
+
+      <p class="why"><b>Отсюда главное следствие:</b> у функции нет «текущего состояния экрана», которое
+      можно поправить. Все, что должно отличаться между прогонами, обязано приехать снаружи — либо
+      параметром, либо из состояния, за которым Compose следит. Дальше разберемся, что такое «следит».</p>
+
+      <dl class="defs">
+        <dt>композиция</dt>
+        <dd>Первый прогон composable-функций. Compose выполнил их сверху вниз и получил дерево того,
+        что показать на экране.</dd>
+        <dt>рекомпозиция</dt>
+        <dd>Повторный прогон <b>части</b> этих функций, когда данные изменились. Не перерисовка всего
+        экрана, а перевыполнение отдельных функций.</dd>
+        <dt>состояние (state)</dt>
+        <dd>Значение, за изменением которого Compose следит: <code>MutableState</code>. Обычная
+        переменная состоянием не является.</dd>
+        <dt>группа</dt>
+        <dd>Кусок кода, для которого рантайм хранит отдельную запись в памяти композиции: тело
+        функции, ветка <code>if</code>, элемент списка.</dd>
+      </dl>
+
+      <h2 id="t2"><span class="num">02</span> Состояние: почему обычной переменной не хватает</h2>
+
+      <p class="prose">Самый показательный эксперимент — счетчик в четырех вариантах. Разница между
+      ними ровно в двух словах: <code>remember</code> и <code>mutableStateOf</code>.</p>
+
+      <p class="filename">Вариант 1 — обычная переменная</p>
+<pre class="bad"><code>@Composable
+fun Counter() {
+    var count = 0                                   // ни памяти, ни наблюдения
+
+    Button(onClick = { count++ }) {
+        Text(text = "Нажато $count раз")
+    }
+}</code></pre>
+      <p class="why">Экран не меняется вообще. <code>count++</code> отрабатывает, но Compose про это
+      изменение не знает — рекомпозиции нет, а если бы и была, переменная создалась бы заново с
+      нулем.</p>
+
+      <p class="filename">Вариант 2 — есть память, нет наблюдения</p>
+<pre class="bad"><code>var count = remember { 0 }                          // значение переживет прогон
+Button(onClick = { count++ }) { … }                 // но об изменении никто не узнает</code></pre>
+      <p class="why">То же самое на экране: ноль. <code>remember</code> дает память, но не
+      уведомление.</p>
+
+      <p class="filename">Вариант 3 — есть наблюдение, нет памяти</p>
+<pre class="bad"><code>var count by mutableStateOf(0)                      // без remember
+Button(onClick = { count++ }) { … }</code></pre>
+      <p class="why">Значение изменилось, рекомпозиция запустилась — и создала новое состояние с
+      нулем. Счетчик мигает единицей и возвращается к нулю. Lint ловит это проверкой
+      <code>UnrememberedMutableState</code> с уровнем Error.</p>
+
+      <p class="filename">Вариант 4 — правильно</p>
+<pre class="good"><code>@Composable
+fun Counter() {
+    var count by remember { mutableIntStateOf(0) }
+
+    Button(onClick = { count++ }) {
+        Text(text = "Нажато $count раз")
+    }
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Вариант</th><th>Память между прогонами</th><th>Compose узнает об изменении</th><th>Что на экране</th></tr>
+        <tr><td class="mono">var count = 0</td><td>нет</td><td>нет</td><td>всегда 0</td></tr>
+        <tr><td class="mono">remember { 0 }</td><td>есть</td><td>нет</td><td>всегда 0</td></tr>
+        <tr><td class="mono">mutableStateOf(0)</td><td>нет</td><td>есть</td><td>мигает и сбрасывается</td></tr>
+        <tr class="now"><td class="mono">remember { mutableIntStateOf(0) }</td><td>есть</td><td>есть</td><td>считает</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Два слова отвечают за две разные вещи: <code>remember</code> — «сохрани между
+      прогонами», <code>mutableStateOf</code> — «следи за изменениями». Нужны оба, и это не
+      дублирование.</p>
+
+      <h2 id="t3"><span class="num">03</span> Что дописывает в твои функции плагин компилятора</h2>
+
+      <p class="prose">Аннотация <code>@Composable</code> — не маркер для читателя, а инструкция
+      компилятору. Он переписывает функцию: добавляет скрытый параметр и оборачивает тело в служебные
+      вызовы. Примерно так (сильно упрощенно):</p>
+
+<pre><code>// что написал ты
+@Composable
+fun Greeting(name: String) {
+    Text(text = "Привет, $name")
+}
+
+// во что это превращается
+fun Greeting(name: String, $composer: Composer, $changed: Int) {
+    $composer.startRestartGroup(key = -1234567)        // открыли группу в памяти
+    if ($changed and 0b1110 == 0 || !$composer.skipping) {
+        Text(text = "Привет, $name", $composer, 0)
+    } else {
+        $composer.skipToGroupEnd()                     // параметры те же — пропускаем
+    }
+    $composer.endRestartGroup()?.updateScope { c, _ -&gt;
+        Greeting(name, c, $changed or 1)               // как перезапустить эту функцию позже
+    }
+}</code></pre>
+
+      <p class="prose">Три вещи, которые из этого следуют и понадобятся дальше:</p>
+
+      <ol class="cards">
+        <li data-s="n">
+          <div class="head">У каждого куска кода есть свой адрес в памяти</div>
+          <code>startRestartGroup(key)</code> — ключ вычисляется компилятором из позиции вызова в
+          исходнике. Это основа всей памяти композиции, раздел 04.
+        </li>
+        <li data-s="n">
+          <div class="head">Функция умеет пропустить сама себя</div>
+          Если аргументы не изменились, тело не выполняется — <code>skipToGroupEnd</code>. Возможность
+          сравнить аргументы зависит от стабильности типов, раздел 09.
+        </li>
+        <li data-s="n">
+          <div class="head">Функция умеет перезапустить сама себя</div>
+          <code>updateScope</code> сохраняет способ вызвать ее заново. Это и есть «граница
+          перезапуска» из раздела 05.
+        </li>
+      </ol>
+
+      <div class="note">
+        <span class="tag">Побочный факт</span>
+        <p><code>@Composable</code>-функцию нельзя вызвать из обычной именно поэтому: у вызова нет
+        <code>$composer</code>, который нужно передать. Ровно как <code>suspend</code>-функцию нельзя
+        вызвать вне корутины.</p>
+      </div>
+
+      <h2 id="t4"><span class="num">04</span> Блокнот композиции: где Compose держит память</h2>
+
+      <p class="prose">Память композиции называется <b>slot table</b> — плоский массив, в который
+      рантайм по очереди записывает все, что встретил при прогоне: открытые группы, значения
+      <code>remember</code>, параметры функций, ссылки на узлы дерева.</p>
+
+      <pre class="ascii"><code>UserScreen(user)
+├─ группа UserScreen        слот 0: параметр user
+│  ├─ группа Row            слот 1
+│  │  ├─ группа Text        слот 2: параметр "Привет, Аня"
+│  │  └─ группа Button      слот 3: параметр onClick
+│  └─ remember { … }        слот 4: сохраненное значение
+└─ …</code></pre>
+
+      <p class="prose">Устроено это как <b>gap buffer</b> — массив с «дырой» в позиции курсора.
+      Вставка и удаление в месте курсора стоят O(1), а рекомпозиция как раз идет линейно, сверху вниз.
+      Отсюда скорость: рантайм не сравнивает деревья, он идет по массиву и проверяет, совпало ли
+      записанное с тем, что видит сейчас.</p>
+
+      <h3>Адрес в памяти — это место в коде, а не имя переменной</h3>
+
+      <p class="prose">Ключевой и самый неинтуитивный факт. <code>remember</code> не знает, в какую
+      переменную его положили: он находит свое значение по позиции вызова в исходнике. Это называется
+      позиционной памятью.</p>
+
+<pre><code>@Composable
+fun Demo(showFirst: Boolean) {
+    if (showFirst) {
+        val a = remember { Random.nextInt() }   // позиция 1
+        Text(text = "$a")
+    } else {
+        val b = remember { Random.nextInt() }   // позиция 2 — другая ячейка, другое значение
+        Text(text = "$b")
+    }
+}</code></pre>
+
+      <p class="prose">Пока структура вызовов стабильна, все работает само. Ломается там, где
+      структура меняется динамически — в списках:</p>
+
+<pre class="bad"><code>Column {
+    for (item in items) {          // позиция вызова одна и та же для всех элементов
+        ItemRow(item = item)       // отличаются только порядковым номером
+    }
+}</code></pre>
+
+      <p class="why">Удалили первый элемент — все остальные сдвинулись на позицию вверх. Для рантайма
+      это не «удалили первый», а «у всех изменились данные»: он переиспользует ячейку первого элемента
+      для второго вместе со всем, что там запомнено, — раскрытым состоянием, анимацией, позицией
+      скролла вложенного списка. Отсюда <code>key</code>:</p>
+
+<pre class="good"><code>LazyColumn {
+    items(items = items, key = { it.id }) { item -&gt;   // адрес = id, а не порядковый номер
+        ItemRow(item = item)
+    }
+}
+
+// для обычных контейнеров — то же самое явным вызовом
+Column {
+    items.forEach { item -&gt;
+        key(item.id) { ItemRow(item = item) }
+    }
+}</code></pre>
+
+      <p class="why"><code>key(…)</code> подменяет адрес группы: вместо позиции в коде используется
+      переданное значение. Элемент увозит свою память с собой при любой перестановке — кейс 8.</p>
+
+      <h2 id="t5"><span class="num">05</span> Границы перезапуска: почему обновляется больше, чем ждешь</h2>
+
+      <p class="prose">Compose перезапускает не строку, где читается состояние, а <b>ближайшую
+      перезапускаемую функцию</b>, внутри которой это чтение произошло — тот самый
+      <code>updateScope</code> из раздела 03.</p>
+
+<pre class="bad"><code>@Composable
+fun ProfileScreen(viewModel: ProfileViewModel) {
+    var query by remember { mutableStateOf("") }
+
+    Column {
+        Header()                                  // ← перезапускается на каждый символ
+        HeavyChart(data = viewModel.chartData)    // ← и это тоже
+        TextField(value = query, onValueChange = { query = it })
+        Text(text = "Ищем: $query")
+    }
+}</code></pre>
+
+      <p class="why">Чтение <code>query</code> произошло в теле <code>ProfileScreen</code>, значит
+      граница перезапуска — вся эта функция. <code>Header</code> и <code>HeavyChart</code> получат шанс
+      пропустить себя по неизменившимся параметрам, но сама функция выполнится целиком на каждый
+      введенный символ. Если параметры нестабильны — пропуска не будет и там.</p>
+
+      <h3>Три приема сузить границу</h3>
+
+      <p class="filename">Прием 1 — вынести читающий кусок в свою функцию</p>
+<pre class="good"><code>@Composable
+fun ProfileScreen(viewModel: ProfileViewModel) {
+    Column {
+        Header()
+        HeavyChart(data = viewModel.chartData)
+        SearchSection()                    // чтение состояния переехало внутрь
+    }
+}
+
+@Composable
+private fun SearchSection() {
+    var query by remember { mutableStateOf("") }
+    TextField(value = query, onValueChange = { query = it })
+    Text(text = "Ищем: $query")
+}</code></pre>
+
+      <p class="filename">Прием 2 — отложить чтение, передав лямбду вместо значения</p>
+<pre class="good"><code>// было: значение читается здесь, перезапускается родитель
+Badge(count = state.unreadCount)
+
+// стало: значение прочитается внутри Badge, перезапустится только он
+Badge(count = { state.unreadCount })</code></pre>
+
+      <p class="filename">Прием 3 — читать в лямбде модификатора, а не в теле</p>
+<pre class="good"><code>// было: рекомпозиция на каждый кадр анимации
+Box(modifier = Modifier.offset(x = offsetX.dp))
+
+// стало: чтение в фазе layout, композиция не перезапускается вообще
+Box(modifier = Modifier.offset { IntOffset(x = offsetX.roundToPx(), y = 0) })</code></pre>
+
+      <p class="why">Третий прием — не микрооптимизация, а переход в другую фазу кадра. Об этом
+      следующий раздел.</p>
+
+      <h2 id="t6"><span class="num">06</span> Три фазы кадра: не всякое изменение — рекомпозиция</h2>
+
+      <pre class="ascii"><code>┌───────────────┐   что показывать: прогон твоих функций
+│  composition  │   результат — дерево узлов
+└───────┬───────┘
+        ▼
+┌───────────────┐   где и какого размера: измерение и расстановка
+│    layout     │
+└───────┬───────┘
+        ▼
+┌───────────────┐   как выглядит: отрисовка на канве
+│     draw      │
+└───────────────┘</code></pre>
+
+      <p class="prose">Изменение состояния запускает не весь конвейер, а фазу, в которой это состояние
+      было прочитано. Прочитал в теле функции — перезапустится композиция и все, что ниже. Прочитал в
+      лямбде <code>offset { }</code> — только layout и draw. Прочитал в
+      <code>drawBehind { }</code> — только draw.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Где читается состояние</th><th>Что перезапускается</th><th>Пример</th></tr>
+        <tr><td>тело composable</td><td>composition → layout → draw</td><td class="mono">Text(text = "$count")</td></tr>
+        <tr><td>лямбда layout-модификатора</td><td>layout → draw</td><td class="mono">Modifier.offset { … }</td></tr>
+        <tr><td>лямбда draw-модификатора</td><td>draw</td><td class="mono">Modifier.drawBehind { … }</td></tr>
+        <tr><td class="mono">graphicsLayer { }</td><td>только слой, без перерисовки контента</td><td class="mono">Modifier.graphicsLayer { alpha = … }</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Правило для анимаций: <b>чем позже фаза, тем дешевле</b>. Перемещение,
+      прозрачность, поворот, масштаб — все это делается на уровне layout и draw и не должно доходить до
+      композиции. Отсюда чеклист: увидел рекомпозицию на каждый кадр анимации — ищи чтение состояния в
+      теле функции.</p>
+
+      <h2 id="t7"><span class="num">07</span> Виды remember: разбор по одному</h2>
+
+      <p class="prose">Сам <code>remember</code> устроен просто: при первом прогоне выполняет лямбду и
+      кладет результат в слот, на следующих — достает из слота, если ключи совпали.</p>
+
+<pre><code>@Composable
+inline fun &lt;T&gt; remember(key1: Any?, calculation: () -&gt; T): T =
+    currentComposer.cache(currentComposer.changed(key1)) { calculation() }</code></pre>
+
+      <h3>1. remember { } — без ключей</h3>
+
+      <p class="prose">Значение вычисляется один раз при входе в композицию. Берется, когда результат
+      ни от чего не зависит: держатель состояния, форматтер, компаратор, кисть.</p>
+
+<pre class="good"><code>val brush = remember {
+    ShaderBrush(BitmapShader(bitmap, TileMode.REPEAT, TileMode.REPEAT))
+}</code></pre>
+
+      <p class="filename">Частая ошибка — вычисления вообще нет под remember</p>
+<pre class="bad"><code>@Composable
+fun ContactList(contacts: List&lt;Contact&gt;, comparator: Comparator&lt;Contact&gt;) {
+    LazyColumn {
+        items(contacts.sortedWith(comparator)) { … }   // сортировка на каждом прогоне
+    }
+}</code></pre>
+      <p class="why">Симптом: экран визуально корректен, но подтормаживает при любой анимации —
+      сортировка выполняется столько раз, сколько было кадров. Лечится
+      <code>remember(contacts, comparator) { contacts.sortedWith(comparator) }</code> — кейс 3.</p>
+
+      <h3>2. remember(key1, key2) { } — с ключами</h3>
+
+      <p class="prose">Ключи — все, от чего зависит результат. Сравниваются структурно, через
+      <code>==</code>. Ключ изменился — лямбда выполняется заново.</p>
+
+<pre class="good"><code>val avatar = remember(userId) { avatarLoader.brushFor(userId) }</code></pre>
+
+<pre class="bad"><code>// ошибка 1: ключа нет — значение устарело
+val user = remember { repository.find(userId) }        // userId сменился, данные прежние
+
+// ошибка 2: ключ нестабилен — пересчет на каждом прогоне
+val filtered = remember(onClick) { items.filter(…) }   // лямбда каждый раз новая</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Ключ</th><th>Что происходит</th></tr>
+        <tr><td class="mono">лямбда</td><td>Новый объект на каждом прогоне, если компилятор ее не
+        мемоизировал — пересчет всегда. Вместо ключа берется <code>rememberUpdatedState</code></td></tr>
+        <tr><td class="mono">class без equals</td><td>Сравнение по ссылке: новый экземпляр из ViewModel
+        дает пересчет даже при тех же данных. Лечится <code>data class</code> или ключом по id</td></tr>
+        <tr><td class="mono">List</td><td>Сравнение структурное, равный по содержимому список пересчета
+        не даст. Опасность обратная: <code>MutableList</code>, измененный на месте, ключ не изменит —
+        значение устареет</td></tr>
+        <tr><td class="mono">Unit, true</td><td>То же, что вовсе без ключей. Компилятор подсвечивает
+        проверкой <code>OpaqueUnitKey</code></td></tr>
+      </table>
+      </div>
+
+      <h3>3. mutableStateOf и его примитивные версии</h3>
+
+      <p class="prose">Для <code>Int</code>, <code>Long</code>, <code>Float</code>,
+      <code>Double</code> есть отдельные фабрики: они хранят значение примитивом и не заворачивают его
+      в объект на каждую запись.</p>
+
+<pre class="good"><code>var count by remember { mutableIntStateOf(0) }        // без упаковки в Integer
+
+val state = remember { mutableIntStateOf(0) }
+state.intValue += 1                                   // не state.value</code></pre>
+
+<pre class="bad"><code>var count by remember { mutableStateOf(0) }   // AutoboxingStateCreation
+val v = state.value                           // AutoboxingStateValueProperty
+var text by mutableStateOf("")                // UnrememberedMutableState — уровень Error</code></pre>
+
+      <p class="why">Симптом первых двух — «пила» по <code>java.lang.Integer</code> в Memory Profiler
+      во время скролла, в тяжелых случаях пропущенные кадры из-за сборок мусора (кейс 9). Симптом
+      третьей — поле ввода не печатает, чекбокс отщелкивает назад (кейс 1).</p>
+
+      <h3>4. Коллекции в состоянии</h3>
+
+      <p class="prose">Два рабочих варианта, выбор по тому, кто владеет коллекцией. Правит сам UI
+      точечно (чек-листы, выбор, редактируемая форма) — snapshot-коллекция. Данные приходят готовым
+      снимком из ViewModel — неизменяемый список внутри <code>MutableState</code>.</p>
+
+<pre class="good"><code>// вариант 1: наблюдаются сами мутации коллекции
+val selected = remember { mutableStateListOf&lt;Long&gt;() }
+selected += id
+
+// вариант 2: наблюдается замена ссылки
+var items by remember { mutableStateOf(emptyList&lt;Item&gt;()) }
+items = items + newItem</code></pre>
+
+<pre class="bad"><code>// ошибка 1: обычная коллекция — изменения не наблюдаются вообще
+val items = remember { mutableListOf&lt;Item&gt;() }
+items.add(newItem)
+
+// ошибка 2: изменяемая коллекция внутри состояния — MutableCollectionMutableState
+val items = remember { mutableStateOf(mutableListOf("A")) }
+items.value.add("B")</code></pre>
+
+      <p class="why">Симптом: «данные есть в дебаггере, но не на экране». Элемент появляется скачком
+      позже — при первой рекомпозиции по другой причине: повороте, скролле, любом другом изменении.
+      Кейс 5.</p>
+
+      <h3>5. derivedStateOf — состояние, вычисленное из состояния</h3>
+
+      <p class="prose">Нужен ровно в одном случае: <b>вход меняется чаще, чем должен меняться
+      выход</b>. Позиция скролла меняется каждый кадр, а флаг «показать кнопку наверх» — дважды за весь
+      скролл.</p>
+
+<pre class="good"><code>val listState = rememberLazyListState()
+val showButton by remember {
+    derivedStateOf { listState.firstVisibleItemIndex &gt; 0 }
+}</code></pre>
+
+<pre class="bad"><code>// ошибка 1: вход и выход меняются одинаково часто — лишняя обертка
+val fullName by remember { derivedStateOf { "$firstName $lastName" } }
+val fullName = "$firstName $lastName"                       // так правильно
+
+// ошибка 2: без remember — объект пересоздается каждый прогон, кеш теряется
+val showButton by derivedStateOf { listState.firstVisibleItemIndex &gt; 0 }
+
+// ошибка 3: внутри читается обычный параметр, а не состояние
+val filtered by remember { derivedStateOf { items.filter { query in it.name } } }
+val filtered by remember(query) { derivedStateOf { … } }    // так правильно</code></pre>
+
+      <p class="why">Третья ошибка коварнее прочих: <code>derivedStateOf</code> следит только за
+      чтениями наблюдаемого состояния. Обычный параметр <code>query</code> в слежку не попадает, и
+      список «залипает» на первом значении.</p>
+
+      <h3>6. rememberSaveable — пережить поворот и смерть процесса</h3>
+
+      <p class="prose"><code>remember</code> живет столько же, сколько композиция: поворот экрана его
+      обнуляет. <code>rememberSaveable</code> дополнительно сохраняет значение в
+      <code>Bundle</code>.</p>
+
+<pre class="good"><code>var text by rememberSaveable { mutableStateOf("") }        // переживет поворот и смерть процесса</code></pre>
+
+      <p class="prose">Автоматически сохраняется все, что кладется в <code>Bundle</code>: примитивы,
+      строки, <code>Parcelable</code>. Свой тип — через <code>Saver</code>:</p>
+
+<pre><code>data class Filters(val query: String, val onlyActive: Boolean)
+
+val FiltersSaver = listSaver&lt;Filters, Any&gt;(
+    save = { listOf(it.query, it.onlyActive) },
+    restore = { Filters(query = it[0] as String, onlyActive = it[1] as Boolean) }
+)
+
+var filters by rememberSaveable(stateSaver = ...) { mutableStateOf(Filters("", false)) }</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Ограничение Bundle</span>
+        <p><code>Bundle</code> — не хранилище данных, а транспорт для восстановления экрана. Лимит на
+        всю транзакцию — около 1 МБ на процесс, практический потолок для одного экрана — десятки
+        килобайт. Список из сети туда не кладут: он живет во ViewModel и грузится заново, а в
+        <code>rememberSaveable</code> остается позиция скролла и введенный текст.</p>
+      </div>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что переживает</th><th>remember</th><th>rememberSaveable</th><th>ViewModel</th><th>SavedStateHandle</th></tr>
+        <tr><td>Рекомпозицию</td><td>да</td><td>да</td><td>да</td><td>да</td></tr>
+        <tr><td>Поворот экрана</td><td>нет</td><td>да</td><td>да</td><td>да</td></tr>
+        <tr><td>Уход из композиции</td><td>нет</td><td>нет</td><td>да</td><td>да</td></tr>
+        <tr><td>Смерть процесса</td><td>нет</td><td>да</td><td>нет</td><td>да</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t8"><span class="num">08</span> Где состояние обязано жить</h2>
+
+      <p class="prose">Решение принимается до написания кода и начинается с одного различения.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Признак</th><th>Состояние UI-элемента</th><th>Состояние экрана</th></tr>
+        <tr><td>Что описывает</td><td>свойство самого элемента: раскрыт, проскроллен, анимируется</td>
+            <td>что показать: данные приложения</td></tr>
+        <tr><td>Откуда берется</td><td>из самого UI</td><td>из слоя данных: репозиторий, база, сеть</td></tr>
+        <tr><td>Поворот экрана</td><td>теряет смысл вместе с UI</td><td>данные не становятся невалидными</td></tr>
+        <tr><td>Где живет</td><td><code>remember</code>, <code>rememberSaveable</code>, держатель</td>
+            <td>ViewModel</td></tr>
+      </table>
+      </div>
+
+      <p class="why"><b>Тест из двух вопросов.</b> Может ли значение приехать из репозитория или уйти в
+      него? Тогда это состояние экрана. Теряет ли оно смысл после пересоздания экрана? Тогда это
+      состояние UI-элемента.</p>
+
+      <h3>Правило подъема состояния</h3>
+
+      <p class="prose">Состояние поднимается до самого низкого общего предка всех, кто его читает и
+      пишет. Владелец отдает вниз неизменяемое значение и события для его изменения.</p>
+
+<pre class="good"><code>@Composable
+private fun ConversationScreen(messages: List&lt;Message&gt;) {
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()        // нужен и списку, и полю ввода
+
+    MessagesList(messages = messages, listState = listState)
+    UserInput(onMessageSent = { scope.launch { listState.scrollToItem(0) } })
+}
+
+@Composable
+private fun MessagesList(
+    messages: List&lt;Message&gt;,
+    listState: LazyListState = rememberLazyListState()   // дефолт: никому не нужен — остается внутри
+) {
+    LazyColumn(state = listState) { … }
+}</code></pre>
+
+      <p class="why">Ошибка в одну сторону — поднять выше необходимого: состояние лежит в корне
+      экрана, читают его два листа, и перезапускается вся ветка вместо двух узлов (кейс 6, кейс 10).
+      Ошибка в другую — оставить внизу то, что нужно соседям, и потом синхронизировать руками.</p>
+
+      <h3>Обычный класс — держатель состояния</h3>
+
+      <p class="prose">Признак: логика отображения стала сложной (несколько полей, несколько
+      операций), а компонент переиспользуемый — панель поиска, группа чипов, календарь. Бизнес-логики
+      нет, данные приложения не нужны.</p>
+
+<pre class="good"><code>@Stable
+class SearchBarState(
+    private val suggestions: StateFlow&lt;List&lt;Suggestion&gt;&gt;,
+    private val onSubmit: (String) -&gt; Unit,
+    val focusRequester: FocusRequester
+) {
+    var query by mutableStateOf("")
+        private set
+
+    val isClearVisible: Boolean get() = query.isNotEmpty()
+
+    fun onQueryChange(value: String) { query = value }
+}
+
+@Composable
+fun rememberSearchBarState(
+    suggestions: StateFlow&lt;List&lt;Suggestion&gt;&gt;,
+    onSubmit: (String) -&gt; Unit,
+    focusRequester: FocusRequester = remember { FocusRequester() }
+): SearchBarState = remember(suggestions, onSubmit, focusRequester) {
+    SearchBarState(suggestions, onSubmit, focusRequester)
+}</code></pre>
+
+      <p class="prose">Почему тут нельзя ViewModel — три независимые причины:</p>
+
+      <ol class="cards">
+        <li data-s="y">
+          <div class="head">Скоуп один на экран</div>
+          ViewModel привязана к экрану, а не к месту вызова. Две группы чипов на одном экране получат
+          одну и ту же ViewModel и слипнутся в одно состояние — кейс 11.
+        </li>
+        <li data-s="y">
+          <div class="head">Живет дольше, чем нужно</div>
+          ViewModel переживает поворот, а состояние UI-элемента обязано пересоздаться вместе с UI.
+        </li>
+        <li data-s="y">
+          <div class="head">Нет доступа к тому, что нужно UI</div>
+          ViewModel не имеет права держать <code>Context</code> и <code>Resources</code>, а логике
+          отображения они нужны.
+        </li>
+      </ol>
+
+      <h3>ViewModel — когда без нее нельзя</h3>
+
+      <p class="prose">Достаточно любого признака: нужна бизнес-логика или данные из репозитория;
+      suspend-операция не должна прерваться при повороте; состояние живет, пока экран в стеке
+      навигации; состояние делят большие части UI.</p>
+
+<pre class="good"><code>@HiltViewModel
+class ConversationViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    messagesRepository: MessagesRepository
+) : ViewModel() {
+
+    private val channelId: String = savedStateHandle["channelId"] ?: error("no channelId")
+
+    val messages: StateFlow&lt;List&lt;Message&gt;&gt; = messagesRepository
+        .getLatestMessages(channelId = channelId)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+}</code></pre>
+
+      <div class="note strict">
+        <span class="tag">ViewModel не передается вниз по дереву</span>
+        <p>Ее принимает только экранная composable, и то с дефолтом <code>hiltViewModel()</code>.
+        Дальше вниз идут значения и лямбды. Иначе дочерний компонент нельзя ни переиспользовать, ни
+        показать в превью, ни протестировать отдельно.</p>
+      </div>
+
+      <pre class="ascii"><code>Где хранить значение?
+│
+├─ приезжает из репозитория или уходит в него       → ViewModel
+│    └─ и должно пережить смерть процесса           → SavedStateHandle
+│
+├─ теряет смысл при пересоздании экрана
+│    ├─ пользователь не должен его потерять         → rememberSaveable
+│    └─ можно потерять                              → remember
+│
+└─ логика отображения сложная, компонент общий      → класс-держатель + rememberXxxState()</code></pre>
+
+      <h2 id="t9"><span class="num">09</span> Стабильность и strong skipping</h2>
+
+      <p class="prose">Пропуск функции возможен, только если Compose может сравнить аргументы с
+      прошлыми. Тип, про который он способен это сказать, называют <b>стабильным</b>: он либо
+      неизменяемый, либо сам сообщает об изменениях.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Стабильно</th><th>Нестабильно</th></tr>
+        <tr>
+          <td><code>Int</code>, <code>String</code>, enum, лямбда, <code>data class</code> из
+          <code>val</code> стабильных полей, <code>MutableState</code>, <code>ImmutableList</code></td>
+          <td><code>List</code> / <code>Map</code> / <code>Set</code> (интерфейсы), класс с
+          <code>var</code>, тип из модуля, собранного без плагина Compose</td>
+        </tr>
+      </table>
+      </div>
+
+      <p class="prose">С Kotlin 2.0.20 по умолчанию включен <b>strong skipping</b>. Он меняет две вещи:
+      пропускаться могут все перезапускаемые функции, даже с нестабильными параметрами (такие
+      параметры сравниваются по ссылке, а не по содержимому), и лямбды с нестабильными захватами
+      компилятор мемоизирует сам.</p>
+
+      <div class="note">
+        <span class="tag">Что это не отменяет</span>
+        <p>Сравнение по ссылке не спасает, когда объект новый, а содержимое то же:
+        <code>state.copy(items = items)</code> — другая ссылка, значит прогон будет. Поэтому
+        <code>@Immutable</code>, <code>@Stable</code> и неизменяемые коллекции
+        (<code>kotlinx.collections.immutable</code>) остаются рабочим инструментом — кейс 12.</p>
+      </div>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Двенадцать кейсов</h2>
+        <p>Схема в каждом одна: задача, код как его пишут, что видит пользователь, объяснение через
+        разделы части I и правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Чекбокс «Согласен с условиями» отщелкивает назад</h3>
+        <p class="task">Экран оформления заказа, обязательная галочка перед оплатой.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun AgreementRow(modifier: Modifier = Modifier) {
+    var isChecked by mutableStateOf(false)          // забыли remember
+
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = isChecked, onCheckedChange = { isChecked = it })
+        Text(text = "Согласен с условиями")
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал на чекбокс</li>
+          <li class="hit">Галочка мигнула и вернулась в пустое состояние</li>
+          <li class="hit">Кнопка «Оплатить» так и остается неактивной, оформить заказ невозможно</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>mutableStateOf</code> дает наблюдение, но не память (раздел 02). Клик изменил
+        значение, изменение запустило рекомпозицию, а рекомпозиция выполнила строку заново и создала
+        новое состояние с <code>false</code>. Бесконечный цикл «изменил — потерял».</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>var isChecked by remember { mutableStateOf(false) }</code></pre>
+        <p>А если галочка должна пережить поворот экрана — <code>rememberSaveable</code>. И еще
+        честнее: согласие с условиями обычно относится к состоянию формы, а не элемента, и живет во
+        ViewModel вместе с остальными полями.</p>
+
+        <div class="rule"><b>Правило</b>Lint ловит это проверкой <code>UnrememberedMutableState</code>
+        с уровнем Error — не отключать и не игнорировать.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Введенный текст исчезает при повороте</h3>
+        <p class="task">Форма отзыва о заказе: поле комментария на несколько строк.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun ReviewForm(onSubmit: (String) -&gt; Unit) {
+    var comment by remember { mutableStateOf("") }
+
+    Column {
+        OutlinedTextField(
+            value = comment,
+            onValueChange = { comment = it },
+            label = { Text(text = "Ваш отзыв") }
+        )
+        Button(onClick = { onSubmit(comment) }) { Text(text = "Отправить") }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Написал развернутый отзыв на десять строк</li>
+          <li>Повернул телефон, чтобы было удобнее печатать</li>
+          <li class="hit">Поле пустое, текст потерян целиком</li>
+          <li class="hit">То же самое, если свернуть приложение и вернуться через час — процесс убит</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>remember</code> живет ровно столько же, сколько композиция. Поворот экрана
+        пересоздает <code>Activity</code>, композиция строится заново, слоты пусты (раздел 07,
+        таблица «что переживает что»).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>var comment by rememberSaveable { mutableStateOf("") }</code></pre>
+        <p>Работает, потому что <code>String</code> кладется в <code>Bundle</code> сам. Для своего типа
+        нужен <code>Saver</code>, а для больших данных — ViewModel с
+        <code>SavedStateHandle</code> (кейс 10).</p>
+
+        <div class="rule"><b>Правило</b>Все, что ввел пользователь руками, — минимум
+        <code>rememberSaveable</code>.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Список подтормаживает на анимации</h3>
+        <p class="task">Список контактов с сортировкой и фильтром по строке поиска.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun ContactList(
+    contacts: List&lt;Contact&gt;,
+    query: String,
+    comparator: Comparator&lt;Contact&gt;
+) {
+    val visible = contacts
+        .filter { it.name.contains(query, ignoreCase = true) }
+        .sortedWith(comparator)                      // на каждом прогоне заново
+
+    LazyColumn {
+        items(items = visible, key = { it.id }) { contact -&gt;
+            ContactRow(contact = contact)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Список работает правильно, данные верные</li>
+          <li class="hit">Любая анимация рядом идет рывками</li>
+          <li class="hit">На тысяче контактов скролл ощутимо дергается, телефон греется</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Тело функции выполняется на каждую рекомпозицию — а их столько же, сколько кадров у любой
+        соседней анимации. Фильтрация и сортировка тысячи элементов выполняются 60 раз в секунду и
+        каждый раз аллоцируют новый список.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val visible = remember(contacts, query, comparator) {
+    contacts
+        .filter { it.name.contains(query, ignoreCase = true) }
+        .sortedWith(comparator)
+}</code></pre>
+        <p>Ключи — ровно те три значения, от которых зависит результат. Изменился любой — пересчет,
+        не изменился ни один — берется готовое из слота.</p>
+
+        <div class="rule"><b>Правило</b>Любое вычисление в теле composable, дороже сложения, — под
+        <code>remember</code> с полным набором ключей.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. На экране данные предыдущего пользователя</h3>
+        <p class="task">Карточка профиля, открывается из списка сотрудников компании.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun ProfileCard(userId: Long, repository: UserRepository) {
+    val user = remember { repository.findCached(userId) }     // ключа нет
+
+    Column {
+        Text(text = user.name, style = MaterialTheme.typography.titleLarge)
+        Text(text = user.position)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Открыл карточку Ани — все верно</li>
+          <li>Свайпнул на следующего сотрудника</li>
+          <li class="hit">В шапке имя Бориса, а должность и телефон остались Анины</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Без ключей <code>remember</code> возвращает значение из слота на всех прогонах после первого
+        (раздел 07). Смена <code>userId</code> — это рекомпозиция той же группы, значит слот тот же,
+        значит и значение то же.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val user = remember(userId) { repository.findCached(userId) }</code></pre>
+
+        <div class="rule"><b>Правило</b>Все, что участвует в вычислении, обязано стоять в ключах.
+        Симптом пропущенного ключа — данные предыдущего элемента без единой ошибки в логах.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Добавил товар в список — на экране ничего</h3>
+        <p class="task">Экран создания заказа: товары добавляются по одному кнопкой.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun OrderBuilder(catalog: List&lt;Product&gt;) {
+    val chosen = remember { mutableListOf&lt;Product&gt;() }      // обычный список
+
+    Column {
+        Button(onClick = { chosen.add(catalog.first()) }) {
+            Text(text = "Добавить товар")
+        }
+        chosen.forEach { product -&gt;
+            Text(text = product.name)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал «Добавить товар» пять раз</li>
+          <li class="hit">Список на экране пуст, хотя в дебаггере в нем пять элементов</li>
+          <li class="hit">Повернул экран или проскроллил — товары появились скачком, все сразу</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>mutableListOf</code> — обычная коллекция, ее изменения не являются изменением
+        состояния. Compose ничего не заметил, рекомпозиции нет. При следующей рекомпозиции по другой
+        причине тело выполнилось и отрисовало актуальное содержимое — отсюда «появились скачком».</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val chosen = remember { mutableStateListOf&lt;Product&gt;() }   // snapshot-коллекция
+chosen += catalog.first()</code></pre>
+        <p>Или второй вариант — неизменяемый список внутри состояния, с заменой ссылки:</p>
+<pre class="good"><code>var chosen by remember { mutableStateOf(emptyList&lt;Product&gt;()) }
+chosen = chosen + catalog.first()</code></pre>
+        <p>Что нельзя ни в каком виде — изменяемая коллекция <b>внутри</b> состояния
+        (<code>mutableStateOf(mutableListOf())</code>): ссылка не меняется, мутации не наблюдаются,
+        Lint ругается проверкой <code>MutableCollectionMutableState</code>.</p>
+
+        <div class="rule"><b>Правило</b>Симптом «в дебаггере есть, на экране нет» — всегда про
+        ненаблюдаемую коллекцию.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Весь экран перерисовывается на каждый введенный символ</h3>
+        <p class="task">Экран компании: шапка с логотипом, график статистики и поиск по услугам.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun CompanyScreen(viewModel: CompanyViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var query by remember { mutableStateOf("") }
+
+    Column {
+        CompanyHeader(company = state.company)          // перезапускается на каждый символ
+        StatisticsChart(points = state.points)          // и это тоже
+
+        OutlinedTextField(value = query, onValueChange = { query = it })
+        ServicesList(services = state.services.filter { it.name.contains(query) })
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Начал набирать название услуги</li>
+          <li class="hit">Ввод отстает от печати, буквы появляются рывками</li>
+          <li class="hit">График подмигивает при каждом символе</li>
+          <li class="hit">В Layout Inspector счетчик рекомпозиций у графика растет вместе с вводом</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Граница перезапуска — ближайшая перезапускаемая функция, внутри которой прочиталось
+        состояние (раздел 05). <code>query</code> читается в теле <code>CompanyScreen</code>, значит
+        перезапускается весь экран. Дочерние функции могли бы пропустить себя, но
+        <code>List&lt;Point&gt;</code> нестабилен, и пропуска не будет (раздел 09).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun CompanyScreen(viewModel: CompanyViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    Column {
+        CompanyHeader(company = state.company)
+        StatisticsChart(points = state.points)
+        ServicesSection(services = state.services)     // состояние уехало внутрь
+    }
+}
+
+@Composable
+private fun ServicesSection(services: List&lt;Service&gt;) {
+    var query by remember { mutableStateOf("") }
+    val visible = remember(services, query) {
+        services.filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    OutlinedTextField(value = query, onValueChange = { query = it })
+    ServicesList(services = visible)
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Состояние читается как можно ниже по дереву. Своя функция
+        вокруг читающего куска — самый дешевый способ сузить границу перезапуска.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Кнопка «наверх» стоит дорого</h3>
+        <p class="task">Длинный список операций, кнопка возврата к началу появляется после первого
+        экрана прокрутки.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun OperationsList(items: List&lt;Operation&gt;) {
+    val listState = rememberLazyListState()
+    val showButton = listState.firstVisibleItemIndex &gt; 0     // чтение в теле функции
+
+    Box {
+        LazyColumn(state = listState) {
+            items(items = items, key = { it.id }) { OperationRow(operation = it) }
+        }
+        if (showButton) ScrollToTopButton(listState = listState)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Кнопка появляется и исчезает правильно</li>
+          <li class="hit">Прокрутка не гладкая, особенно на бюджетных устройствах</li>
+          <li class="hit">В Layout Inspector <code>OperationsList</code> рекомпозируется десятки раз в
+          секунду, пока палец на экране</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>firstVisibleItemIndex</code> меняется на каждый сдвиг строки. Чтение в теле функции
+        подписывает всю функцию на эти изменения (раздел 05), хотя результат — булев флаг, который за
+        весь скролл меняется два раза.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val showButton by remember {
+    derivedStateOf { listState.firstVisibleItemIndex &gt; 0 }
+}</code></pre>
+        <p><code>derivedStateOf</code> пересчитывает выражение при каждом изменении входа, но
+        уведомляет читателей только когда <b>результат</b> стал другим. Рекомпозиций — две за весь
+        скролл вместо сотен.</p>
+
+        <div class="note">
+          <span class="tag">Когда derivedStateOf не нужен</span>
+          <p>Если вход меняется не чаще выхода — это чистые накладные расходы.
+          <code>"$firstName $lastName"</code> в обертке не нуждается: имя меняется ровно тогда, когда
+          меняется строка.</p>
+        </div>
+
+        <div class="rule"><b>Правило</b>Вход меняется чаще, чем должен меняться выход, —
+        <code>derivedStateOf</code>. В остальных случаях — обычное выражение.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Удалил один пункт — развернулся другой</h3>
+        <p class="task">Список сохраненных адресов, каждый раскрывается по тапу и удаляется свайпом.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun AddressList(addresses: List&lt;Address&gt;, onDelete: (Long) -&gt; Unit) {
+    LazyColumn {
+        items(addresses) { address -&gt;                 // key не задан
+            AddressRow(address = address, onDelete = { onDelete(address.id) })
+        }
+    }
+}
+
+@Composable
+private fun AddressRow(address: Address, onDelete: () -&gt; Unit) {
+    var isExpanded by remember { mutableStateOf(false) }   // состояние живет в элементе
+    ...
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Раскрыл третий адрес, чтобы посмотреть детали</li>
+          <li>Удалил первый адрес свайпом</li>
+          <li class="hit">Раскрытым оказался четвертый — состояние съехало вместе со сдвигом</li>
+          <li class="hit">Анимация удаления проигрывается не на том элементе</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Без <code>key</code> адрес группы в памяти композиции — порядковый номер (раздел 04). После
+        удаления первого элемента все сдвинулись, и рантайм переиспользовал слоты: элемент, который был
+        третьим, получил память бывшего второго вместе с его <code>isExpanded</code>.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>items(items = addresses, key = { it.id }) { address -&gt;
+    AddressRow(address = address, onDelete = { onDelete(address.id) })
+}</code></pre>
+        <p>Теперь адрес группы — идентификатор самого элемента, и память переезжает вместе с ним. В
+        обычном <code>Column</code> то же самое делается явным <code>key(item.id) { … }</code>.</p>
+
+        <div class="rule"><b>Правило</b><code>key</code> в списках обязателен всегда, когда элементы
+        могут добавляться, удаляться или переставляться. Ключ — стабильный идентификатор данных, не
+        индекс.</div>
+      </section>
+
+      <section class="case" id="c9">
+        <h3>Кейс 9. «Пила» в профайлере во время анимации</h3>
+        <p class="task">Анимированный счетчик бонусов на главном экране.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>var points by remember { mutableStateOf(0) }        // объектная версия для Int
+
+LaunchedEffect(target) {
+    animate(initialValue = 0f, targetValue = target.toFloat()) { value, _ -&gt;
+        points = value.toInt()                     // ~60 записей в секунду
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Анимация идет, число растет — визуально все хорошо</li>
+          <li class="hit">В Memory Profiler «пила» по <code>java.lang.Integer</code></li>
+          <li class="hit">На слабых устройствах анимация дергается из-за сборок мусора</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>mutableStateOf(0)</code> хранит <code>Int</code> как объект: каждая запись создает
+        новый <code>Integer</code>. Шестьдесят аллокаций в секунду на каждое такое состояние.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>var points by remember { mutableIntStateOf(0) }     // значение хранится примитивом</code></pre>
+        <p>Для <code>Long</code>, <code>Float</code>, <code>Double</code> есть такие же фабрики.
+        При работе без делегата читать нужно через <code>intValue</code>, а не <code>value</code> —
+        иначе упаковка вернется.</p>
+
+        <div class="rule"><b>Правило</b>Примитив в состоянии — примитивной фабрикой. Lint подсказывает
+        проверками <code>AutoboxingStateCreation</code> и
+        <code>AutoboxingStateValueProperty</code>.</div>
+      </section>
+
+      <section class="case" id="c10">
+        <h3>Кейс 10. Заполненная форма пропала после звонка</h3>
+        <p class="task">Длинная форма записи на услугу: дата, мастер, комментарий, промокод.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@HiltViewModel
+class BookingViewModel @Inject constructor(...) : ViewModel() {
+
+    private val _form = MutableStateFlow(BookingForm())      // только в памяти процесса
+    val form: StateFlow&lt;BookingForm&gt; = _form.asStateFlow()
+
+    fun onCommentChange(value: String) {
+        _form.update { it.copy(comment = value) }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Заполнил форму наполовину</li>
+          <li>Свернул приложение, чтобы посмотреть время в календаре, там задержался</li>
+          <li class="hit">Вернулся — форма пустая: система убила процесс ради памяти</li>
+          <li class="hit">Поворот экрана при этом работал нормально, поэтому баг не находят в тестах</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>ViewModel переживает поворот, но не смерть процесса (раздел 07, таблица). Разница видна
+        только на реальном сценарии со свернутым приложением — воспроизводится опцией «Не сохранять
+        действия» в настройках разработчика.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@HiltViewModel
+class BookingViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    val comment: StateFlow&lt;String&gt; = savedStateHandle.getStateFlow(key = COMMENT, initialValue = "")
+
+    fun onCommentChange(value: String) {
+        savedStateHandle[COMMENT] = value        // переживет смерть процесса
+    }
+
+    private companion object {
+        const val COMMENT = "comment"
+    }
+}</code></pre>
+        <p>В <code>SavedStateHandle</code> кладется только то, что нельзя получить заново: введенный
+        текст, выбранная дата, шаг мастера. Список мастеров туда не кладут — он грузится с сервера
+        повторно.</p>
+
+        <div class="rule"><b>Правило</b>Поворот — это ViewModel. Смерть процесса —
+        <code>SavedStateHandle</code> или <code>rememberSaveable</code>. Проверяется опцией «Не
+        сохранять действия», а не поворотом.</div>
+      </section>
+
+      <section class="case" id="c11">
+        <h3>Кейс 11. Две группы фильтров ведут себя как одна</h3>
+        <p class="task">Экран поиска: сверху чипы категорий, снизу чипы городов. Компонент один и тот
+        же, переиспользуемый.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun ChipsGroup(items: List&lt;String&gt;, viewModel: ChipsViewModel = hiltViewModel()) {
+    val selected by viewModel.selected.collectAsStateWithLifecycle()
+    ...
+}
+
+// на экране
+Column {
+    ChipsGroup(items = categories)
+    ChipsGroup(items = cities)
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Выбрал категорию «Красота»</li>
+          <li class="hit">В группе городов подсветился чип на той же позиции</li>
+          <li class="hit">Сброс фильтра в одной группе сбрасывает обе</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>hiltViewModel()</code> отдает ViewModel, привязанную к владельцу — экрану или
+        destination, а не к месту вызова. Оба компонента получили один и тот же экземпляр и делят
+        состояние (раздел 08).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Stable
+class ChipsGroupState(initial: Set&lt;String&gt; = emptySet()) {
+    var selected by mutableStateOf(initial)
+        private set
+
+    fun toggle(item: String) {
+        selected = if (item in selected) selected - item else selected + item
+    }
+}
+
+@Composable
+fun rememberChipsGroupState(): ChipsGroupState = remember { ChipsGroupState() }
+
+@Composable
+fun ChipsGroup(
+    items: List&lt;String&gt;,
+    state: ChipsGroupState = rememberChipsGroupState()   // свое состояние у каждого вызова
+) { … }</code></pre>
+        <p>Если выбор нужен экрану целиком — состояние поднимается наверх и передается параметром, но
+        по-прежнему не через ViewModel внутри компонента.</p>
+
+        <div class="rule"><b>Правило</b>ViewModel — на экран, не на компонент. Переиспользуемому
+        компоненту нужен класс-держатель и своя <code>rememberXxxState()</code>.</div>
+      </section>
+
+      <section class="case" id="c12">
+        <h3>Кейс 12. Экран не пропускает рекомпозиции, хотя данные не менялись</h3>
+        <p class="task">Экран заказа с несколькими секциями: товары, доставка, оплата.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>data class OrderUiState(
+    val items: List&lt;OrderItem&gt;,          // интерфейс List — нестабильный тип
+    val delivery: Delivery,
+    val isPaying: Boolean
+)
+
+@Composable
+fun OrderScreen(state: OrderUiState) {
+    Column {
+        ItemsSection(items = state.items)          // не пропускается
+        DeliverySection(delivery = state.delivery)
+        PayButton(isPaying = state.isPaying)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал «Оплатить», пошел индикатор</li>
+          <li class="hit">Секция товаров и блок доставки перерисовываются вместе с ним</li>
+          <li class="hit">На длинном заказе кнопка отзывается с задержкой</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>List</code> — интерфейс, за ним может стоять изменяемая реализация, поэтому Compose
+        считает тип нестабильным (раздел 09). Strong skipping это частично лечит — параметр
+        сравнивается по ссылке, — но <code>state.copy(isPaying = true)</code> создает новый объект
+        состояния, и хотя <code>items</code> тот же самый список по ссылке, разбор идет по каждому
+        параметру заново.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Immutable
+data class OrderUiState(
+    val items: ImmutableList&lt;OrderItem&gt;,   // kotlinx.collections.immutable
+    val delivery: Delivery,
+    val isPaying: Boolean
+)</code></pre>
+        <p>Второй прием — не тащить весь state вниз, а передавать секциям ровно то, что им нужно:
+        тогда смена <code>isPaying</code> вообще не касается параметров других секций.</p>
+
+        <div class="note">
+          <span class="tag">Сначала измерить</span>
+          <p>Стабильность — последняя оптимизация, а не первая. Порядок: счетчики рекомпозиций в Layout
+          Inspector → отчет compose compiler о стабильности → правки. Выводы делаются по release-сборке,
+          debug врет из-за отключенных оптимизаций.</p>
+        </div>
+
+        <div class="rule"><b>Правило</b>Нестабильный параметр — это не «плохой код», а причина, по
+        которой функция не может пропустить сама себя. Значение имеет только там, где рекомпозиции
+        реально мешают.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <h3>Симптом на экране — номер кейса</h3>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видно</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Чекбокс отщелкивает, поле не печатает</td><td>состояние без <code>remember</code></td><td class="num">1</td></tr>
+        <tr><td>Введенный текст пропал после поворота</td><td><code>remember</code> вместо <code>rememberSaveable</code></td><td class="num">2</td></tr>
+        <tr><td>Экран корректен, но подтормаживает</td><td>вычисление в теле без <code>remember</code></td><td class="num">3</td></tr>
+        <tr><td>Данные предыдущего элемента</td><td>пропущенный ключ <code>remember</code></td><td class="num">4</td></tr>
+        <tr><td>В дебаггере есть, на экране нет</td><td>ненаблюдаемая коллекция</td><td class="num">5</td></tr>
+        <tr><td>Ввод отстает, соседние блоки моргают</td><td>состояние читается слишком высоко</td><td class="num">6</td></tr>
+        <tr><td>Скролл не гладкий, сотни рекомпозиций</td><td>частое состояние без <code>derivedStateOf</code></td><td class="num">7</td></tr>
+        <tr><td>После удаления раскрылся не тот пункт</td><td>список без <code>key</code></td><td class="num">8</td></tr>
+        <tr><td>«Пила» по Integer в профайлере</td><td><code>mutableStateOf</code> для примитива</td><td class="num">9</td></tr>
+        <tr><td>Форма пропала после сворачивания</td><td>нет <code>SavedStateHandle</code></td><td class="num">10</td></tr>
+        <tr><td>Два одинаковых компонента слиплись</td><td>ViewModel внутри переиспользуемого компонента</td><td class="num">11</td></tr>
+        <tr><td>Секции перерисовываются без изменений</td><td>нестабильные параметры</td><td class="num">12</td></tr>
+      </table>
+      </div>
+
+      <h3>Чеклист, когда экран тормозит</h3>
+
+      <ol class="steps">
+        <li>Проверить, нужна ли композиция вообще: не решается ли задача чтением состояния в лямбде
+        модификатора — <code>offset { }</code>, <code>graphicsLayer { }</code>,
+        <code>drawBehind { }</code>.</li>
+        <li>Найти, где состояние читается, и опустить чтение ниже: своя функция вокруг читающего куска
+        или лямбда вместо значения.</li>
+        <li>Если источник меняется чаще результата — завернуть в <code>derivedStateOf</code> под
+        <code>remember</code>.</li>
+        <li>Проверить параметры дочерних функций: объекты, собираемые в теле родителя, — под
+        <code>remember</code> с ключами.</li>
+        <li>Проверить, что у элементов списков есть <code>key</code>.</li>
+        <li>Примитивы в состоянии — примитивными фабриками.</li>
+        <li>Замерить, а не угадать: счетчики рекомпозиций в Layout Inspector и отчет компилятора о
+        стабильности. Выводы — по release-сборке.</li>
+      </ol>
+
+      <div class="note ok">
+        <span class="tag">Все в трех фразах</span>
+        <p>Compose прогоняет твои функции и ведет блокнот: какая группа кода что запомнила.
+        <code>remember</code> — ячейка этого блокнота, найденная по месту вызова в коде. Рекомпозиция —
+        повторный прогон помеченных групп, и вся оптимизация сводится к двум вопросам: насколько узок
+        кусок, который прогоняется заново, и что в нем создается заново без нужды.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    11.09.2026 · Парная статья: <a href="side-effects.html">сайд-эффекты</a> ·
+    Источники:
+    <a href="https://developer.android.com/develop/ui/compose/state">State and Jetpack Compose</a> ·
+    <a href="https://developer.android.com/develop/ui/compose/performance/stability">Stability in Compose</a> ·
+    <a href="https://developer.android.com/develop/ui/compose/phases">Compose phases</a>
+  </footer>
+</div>
+</body>
+</html>

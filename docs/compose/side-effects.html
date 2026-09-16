@@ -1,0 +1,1853 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сайд-эффекты: где Compose разрешает действовать</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  footer a{color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}   .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)}.lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}  .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;
+    font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px;text-transform:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Сайд-эффекты в Compose: механика и двенадцать кейсов</h1>
+    <p class="sub">Первая половина — как это устроено: что такое эффект, почему он не может жить в теле функции, из чего сделан и когда выполняется. Вторая — двенадцать экранов из нашего приложения: как их пишут, что при этом ломается у пользователя и как надо. Код в примерах полный: экран и ViewModel целиком, без вырезанных кусков.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Что такое эффект</a>
+      <a href="#t2">02 Жизнь composable</a>
+      <a href="#t3">03 Из чего сделан эффект</a>
+      <a href="#t4">04 Момент в кадре</a>
+      <a href="#t5">05 Ключи</a>
+      <a href="#t6">06 Восемь инструментов</a>
+      <a href="#t7">07 Дерево решений</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Загрузка по id</a>
+      <a href="#c2">2 Показ экрана</a>
+      <a href="#c3">3 Действие по кнопке</a>
+      <a href="#c4">4 Таймер</a>
+      <a href="#c5">5 Слушатель</a>
+      <a href="#c6">6 Снекбар</a>
+      <a href="#c7">7 Переход после оплаты</a>
+      <a href="#c8">8 Пагинация</a>
+      <a href="#c9">9 Поток из ViewModel</a>
+      <a href="#c10">10 Внешний объект</a>
+      <a href="#c11">11 Элемент списка</a>
+      <a href="#c12">12 Флаг окна</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <p class="prose">Статья продолжает разбор рекомпозиции и <code>remember</code>: там объяснено, как
+      Compose хранит память между прогонами функций. Здесь — что делать с работой, которая памятью не
+      является: запрос, подписка, таймер, аналитика, навигация, снекбар.</p>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: как это устроено</h2>
+        <p>Семь разделов подряд, читать по порядку. К концу части будет понятно, из чего сделан любой
+        эффект и почему он ведет себя именно так. Кейсы во второй части опираются на эти разделы и
+        ссылаются на них по номерам.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Что такое сайд-эффект и почему тело функции для него не годится</h2>
+
+      <p class="prose"><b>Сайд-эффект</b> — любое изменение, которое переживает прогон composable и
+      видно снаружи него: запрос в сеть, запись в базу, событие аналитики, показ снекбара, регистрация
+      слушателя, переход на другой экран.</p>
+
+      <p class="prose">Начнем с экрана, написанного так, как его написал бы человек с опытом в XML.
+      Логика привычная: пришли на экран — загрузились, отправили аналитику, подписались на события.</p>
+
+      <p class="filename">OrderDetailsScreen.kt — так делать нельзя</p>
+<pre class="bad"><code>@Composable
+fun OrderDetailsScreen(
+    orderId: Long,
+    viewModel: OrderViewModel,
+    onBack: () -&gt; Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    viewModel.loadOrder(orderId)                                  // 1
+    analytics.logScreen(screen = "order", orderId = orderId)      // 2
+    orderEvents.addListener { viewModel.onOrderChanged() }        // 3
+
+    Scaffold(
+        topBar = { OrderTopBar(title = state.title, onBack = onBack) }
+    ) { padding -&gt;
+        OrderContent(state = state, modifier = Modifier.padding(padding))
+    }
+}</code></pre>
+
+      <p class="prose">Три строки, три разных бага. Чтобы понять, откуда они берутся, нужно принять
+      одну вещь про тело composable: <b>оно описывает картинку и может быть выполнено сколько угодно
+      раз</b>. У прогона четыре свойства, и каждое по отдельности ломает императивный код.</p>
+
+      <ol class="cards">
+        <li data-s="r">
+          <div class="head">Прогон повторяется непредсказуемо часто</div>
+          Рекомпозиция запускается от любого прочитанного состояния. Здесь <code>state</code> читается
+          в теле, значит каждый ответ сервера, каждое изменение статуса заказа, каждый спиннер — это
+          новый прогон всех трех строк.
+        </li>
+        <li data-s="r">
+          <div class="head">Прогон может быть отменен на середине</div>
+          Рантайм вправе бросить незаконченную композицию, если данные снова изменились. Запрос,
+          который уже ушел из строки 1, отменять некому.
+        </li>
+        <li data-s="r">
+          <div class="head">Порядок и поток не гарантированы</div>
+          Compose не обещает ни порядок выполнения соседних composable, ни поток, на котором они
+          выполнятся. Рассуждение «сначала загрузится, потом отрисуется» опоры не имеет.
+        </li>
+        <li data-s="r">
+          <div class="head">Прогон может не дойти до экрана</div>
+          Отброшенная композиция ничего не применяет. Аналитика показа уже ушла, а экран пользователь
+          так и не увидел.
+        </li>
+      </ol>
+
+      <p class="prose">Отсюда правило, которое дальше будет повторяться в каждом кейсе: в теле
+      composable нет глаголов. Тело <b>описывает</b>: какие элементы показать и с какими данными.
+      Все, что <b>делает</b>, живет в эффектах.</p>
+
+      <p class="filename">OrderDetailsScreen.kt — так правильно</p>
+<pre class="good"><code>@Composable
+fun OrderDetailsScreen(
+    orderId: Long,
+    viewModel: OrderViewModel,
+    onBack: () -&gt; Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(orderId) {                       // 1: работа, привязанная к экрану
+        viewModel.loadOrder(orderId)
+    }
+
+    LaunchedEffect(orderId) {                       // 2: однократное событие
+        analytics.logScreen(screen = "order", orderId = orderId)
+    }
+
+    DisposableEffect(orderId) {                     // 3: подписка со снятием
+        val listener = OrderListener { viewModel.onOrderChanged() }
+        orderEvents.addListener(listener)
+        onDispose { orderEvents.removeListener(listener) }
+    }
+
+    Scaffold(
+        topBar = { OrderTopBar(title = state.title, onBack = onBack) }
+    ) { padding -&gt;
+        OrderContent(state = state, modifier = Modifier.padding(padding))
+    }
+}</code></pre>
+
+      <p class="why">Три инструмента, три разных признака задачи. Почему именно так — в разделе 06;
+      сначала нужно понять, что вообще происходит с composable во времени.</p>
+
+      <h2 id="t2"><span class="num">02</span> Жизнь composable: три момента, и все</h2>
+
+      <pre class="ascii"><code>вход в композицию          функция выполнилась впервые, ее группа появилась
+     │                     в памяти композиции
+     ├── рекомпозиция      параметры или состояние изменились, функция
+     ├── рекомпозиция      выполнилась заново; группа та же самая
+     ├── ...
+     │
+уход из композиции         группы больше нет: ветка if стала ложной, элемент
+                           уехал из списка, экран сняли с навигации</code></pre>
+
+      <p class="prose">У composable нет <code>onCreate</code>, <code>onStart</code>,
+      <code>onDestroy</code>. Есть только эти три момента, и эффекты — единственный способ повесить на
+      них код. Посмотрим, как это выглядит в реальной разметке.</p>
+
+      <p class="filename">Вход и уход происходят чаще, чем кажется</p>
+<pre><code>@Composable
+fun WalletScreen(state: WalletUiState) {
+    Column {
+        if (state.hasPromo) {
+            PromoBanner(promo = state.promo)      // вход при hasPromo = true,
+        }                                         // уход при hasPromo = false
+
+        LazyColumn {
+            items(state.cards, key = { it.id }) { card -&gt;
+                CardRow(card = card)              // вход, когда элемент подъезжает к экрану,
+            }                                     // уход, когда уезжает за его пределы
+        }
+    }
+}</code></pre>
+
+      <p class="why"><b>Каждый эффект внутри <code>PromoBanner</code> и <code>CardRow</code> проживет
+      столько жизней, сколько раз баннер покажут и сколько раз строку проскроллят туда-обратно.</b>
+      Это причина кейса 11 и половины проблем с аналитикой в списках.</p>
+
+      <div class="note strict">
+        <span class="tag">Композиция — не жизненный цикл экрана</span>
+        <p>Пользователь свернул приложение: <code>Activity</code> получила <code>onStop</code>, а
+        композиция осталась на месте — из нее ничего не уходило. Значит <code>LaunchedEffect</code>
+        продолжает работать, поток продолжает собираться, сокет остается открытым. Привязка к
+        <code>STARTED</code> и <code>RESUMED</code> — это отдельная работа:
+        <code>collectAsStateWithLifecycle</code>, <code>LifecycleResumeEffect</code>,
+        <code>repeatOnLifecycle</code>. Кейс 9 полностью про это.</p>
+      </div>
+
+      <h2 id="t3"><span class="num">03</span> Из чего сделан эффект</h2>
+
+      <p class="prose">Все инструменты из этой статьи сделаны из одного механизма. Разберемся с ним
+      один раз — и дальше поведение любого эффекта будет выводиться, а не запоминаться.</p>
+
+      <p class="prose">Рантайм умеет сообщать объекту, положенному в <code>remember</code>, о трех
+      событиях его жизни:</p>
+
+<pre><code>interface RememberObserver {
+    fun onRemembered()   // значение попало в композицию
+    fun onForgotten()    // значение выброшено: ушла группа или сменился ключ
+    fun onAbandoned()    // композицию отбросили, значение так и не доехало до экрана
+}</code></pre>
+
+      <p class="prose"><code>LaunchedEffect</code> — это <code>remember</code> с ключами, в который
+      положен объект-обертка над корутиной. Реализация в androidx, сокращенно:</p>
+
+<pre><code>@Composable
+fun LaunchedEffect(key1: Any?, block: suspend CoroutineScope.() -&gt; Unit) {
+    val applyContext = currentComposer.applyCoroutineContext
+    remember(key1) { LaunchedEffectImpl(applyContext, block) }      // вот и весь эффект
+}
+
+private class LaunchedEffectImpl(
+    parentCoroutineContext: CoroutineContext,
+    private val task: suspend CoroutineScope.() -&gt; Unit
+) : RememberObserver {
+
+    private val scope = CoroutineScope(parentCoroutineContext)
+    private var job: Job? = null
+
+    override fun onRemembered() {
+        job?.cancel("Old job was still running!")
+        job = scope.launch(block = task)          // корутина стартует ЗДЕСЬ
+    }
+
+    override fun onForgotten() { job?.cancel(); job = null }
+    override fun onAbandoned() { job?.cancel(); job = null }
+}</code></pre>
+
+      <p class="prose"><code>DisposableEffect</code> устроен так же, только вместо корутины хранит
+      результат блока <code>onDispose</code> и вызывает его в <code>onForgotten</code>:</p>
+
+<pre><code>private class DisposableEffectImpl(
+    private val effect: DisposableEffectScope.() -&gt; DisposableEffectResult
+) : RememberObserver {
+
+    private var onDisposeResult: DisposableEffectResult? = null
+
+    override fun onRemembered() { onDisposeResult = InternalScope.effect() }   // тело эффекта
+    override fun onForgotten() { onDisposeResult?.dispose(); onDisposeResult = null }
+    override fun onAbandoned() { }
+}</code></pre>
+
+      <p class="prose">Из этих двадцати строк следует все поведение эффектов. Таблица — то же самое,
+      но по-русски:</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что произошло</th><th>Что делает рантайм</th><th>Что это значит</th></tr>
+        <tr>
+          <td>Composable появился на экране</td>
+          <td><code>onRemembered</code></td>
+          <td>Корутина стартует; тело <code>DisposableEffect</code> выполняется</td>
+        </tr>
+        <tr>
+          <td>Рекомпозиция, ключи не изменились</td>
+          <td>ничего</td>
+          <td>Объект тот же, корутина продолжает работать с прежними значениями</td>
+        </tr>
+        <tr>
+          <td>Рекомпозиция, ключ изменился</td>
+          <td><code>onForgotten</code> старого, затем <code>onRemembered</code> нового</td>
+          <td>Отмена и перезапуск; <code>onDispose</code> вызывается ДО нового захода</td>
+        </tr>
+        <tr>
+          <td>Composable ушел из композиции</td>
+          <td><code>onForgotten</code></td>
+          <td>Корутина отменена, <code>onDispose</code> выполнен</td>
+        </tr>
+        <tr>
+          <td>Композицию отбросили</td>
+          <td><code>onAbandoned</code></td>
+          <td>Эффект не стартовал вовсе — он и не должен был</td>
+        </tr>
+      </table>
+      </div>
+
+      <div class="note">
+        <span class="tag">Главный вывод части I</span>
+        <p><b>Ключи эффекта — это ключи <code>remember</code>, а не «зависимости».</b> Рантайм
+        сравнивает их через <code>equals</code>: совпали — объект тот же, эффект продолжает работать;
+        разошлись — старый выброшен, создан новый. Любая ошибка с ключами объясняется этой одной
+        фразой.</p>
+      </div>
+
+      <p class="why">Исключение из ряда — <code>SideEffect</code>: он ничего не запоминает и не имеет
+      ключей. Его лямбда просто записывается в список отложенной работы текущего кадра
+      (<code>composer.recordSideEffect</code>) и выполняется после того, как композиция успешно
+      применилась.</p>
+
+      <h2 id="t4"><span class="num">04</span> Когда именно эффект выполняется внутри кадра</h2>
+
+      <pre class="ascii"><code>изменилось состояние
+        │
+        ▼
+ ┌──────────────────┐   прогон твоих функций сверху вниз;
+ │   composition    │   тела эффектов НЕ выполняются — они только регистрируются
+ └────────┬─────────┘
+          ▼
+ ┌──────────────────┐   изменения применяются к дереву узлов;
+ │   apply changes  │   вызываются onForgotten (то есть onDispose) и onRemembered;
+ │                  │   выполняются SideEffect; стартуют корутины LaunchedEffect
+ └────────┬─────────┘
+          ▼
+ ┌──────────────────┐
+ │  layout → draw   │   измерение, расстановка, отрисовка
+ └──────────────────┘</code></pre>
+
+      <p class="prose">Проверим схему кодом. Что напечатает этот экран при первом появлении?</p>
+
+<pre><code>@Composable
+fun OrderScreen(orderId: Long) {
+    Timber.d("1: тело начало выполняться")
+
+    LaunchedEffect(orderId) {
+        Timber.d("3: тело эффекта")
+    }
+
+    SideEffect {
+        Timber.d("4: SideEffect")
+    }
+
+    Timber.d("2: тело закончило выполняться")
+    OrderContent()
+}</code></pre>
+
+      <p class="prose">Порядок в логе — <code>1, 2, 4, 3</code>. Строки тела выполняются первыми,
+      потому что на своей строке <code>LaunchedEffect</code> только регистрируется. Дальше идет фаза
+      apply: сначала <code>SideEffect</code>, затем стартует корутина.</p>
+
+      <ol class="steps">
+        <li><b>Тело эффекта не выполняется на своей строке.</b> Код ниже по телу отработает раньше.
+        Логика «эффект посчитает, а следующая строка прочитает результат» не работает никогда.</li>
+        <li><b>Очистка идет перед новым заходом.</b> При смене ключа <code>DisposableEffect</code>
+        сначала выполнит <code>onDispose</code> старого, потом тело нового — слушатель не задвоится.</li>
+        <li><b>Корутина стартует на главном потоке</b> (диспетчер композиции,
+        <code>AndroidUiDispatcher.Main</code>). Тяжелую работу внутри нужно уводить самому:
+        <code>withContext(Dispatchers.IO)</code> или репозиторием, который уже это делает.</li>
+      </ol>
+
+      <h2 id="t5"><span class="num">05</span> Ключи: договор о перезапуске</h2>
+
+      <p class="prose">Правило одно: <b>в ключах ровно то, от чего зависит смысл эффекта</b>. Дальше —
+      четыре способа его нарушить, все четыре встречаются в кейсах части II.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что с ключами</th><th>Что делает рантайм</th><th>Как выглядит на экране</th><th>Кейс</th></tr>
+        <tr>
+          <td>Недостача</td>
+          <td>Объект тот же, перезапуска нет</td>
+          <td>Открыл другой заказ — данные прежнего</td>
+          <td class="num">1, 12</td>
+        </tr>
+        <tr>
+          <td>Избыток</td>
+          <td>Лишние отмены и рестарты</td>
+          <td>Запрос уходит по кругу, спиннер моргает</td>
+          <td class="num">8</td>
+        </tr>
+        <tr>
+          <td>Нестабильный ключ</td>
+          <td>Ключ не равен себе между прогонами</td>
+          <td>Экран не может успокоиться, таймер сбрасывается</td>
+          <td class="num">4</td>
+        </tr>
+        <tr>
+          <td><code>Unit</code> при меняющемся теле</td>
+          <td>Один раз за жизнь группы</td>
+          <td>Поведение включилось однажды и не меняется</td>
+          <td class="num">1, 12</td>
+        </tr>
+      </table>
+      </div>
+
+      <p class="prose">Разберем нестабильный ключ подробно — он самый неочевидный. Что не равно самому
+      себе на следующем прогоне:</p>
+
+<pre class="bad"><code>LaunchedEffect(onFinished) { … }            // лямбда: новый объект на каждом прогоне
+LaunchedEffect(viewModel.buildConfig()) { }  // результат вызова: новый объект
+LaunchedEffect(items) { … }                  // список, собранный в теле родителя
+LaunchedEffect(User(id, name)) { … }         // не data class — equals по ссылке</code></pre>
+
+<pre class="good"><code>LaunchedEffect(orderId) { … }                // примитив
+LaunchedEffect(user.id) { … }                // поле-примитив вместо объекта
+LaunchedEffect(state.filter) { … }           // data class или enum — equals по значению
+LaunchedEffect(Unit) { … }                   // осознанно один раз</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Отдельная ловушка</span>
+        <p>Чтение <code>State</code> внутри уже запущенной корутины <b>ничего не подписывает</b>.
+        Композиция наблюдает за состоянием, корутина — нет: разбудить ее изменение не может. Прочитал
+        значение до цикла — дальше работаешь со снимком; перечитываешь на каждой итерации — значение
+        свежее, но момент изменения все равно пропускаешь. Реакция именно на изменение — это
+        <code>snapshotFlow</code>, кейс 8.</p>
+      </div>
+
+      <p class="why"><b>Проверка на ревью в одно движение:</b> прочитать тело эффекта, выписать все
+      изменяемые имена, сверить со скобками. Каждое имя обязано быть либо в скобках, либо обернуто в
+      <code>rememberUpdatedState</code>. Третьего варианта нет.</p>
+
+      <h2 id="t6"><span class="num">06</span> Восемь инструментов, по одному</h2>
+
+      <p class="prose">Каждый — с законченным примером: экран целиком, где нужно — вместе с ViewModel.
+      Порядок от самого частого к самому редкому.</p>
+
+      <h3>1. LaunchedEffect(keys) — работа, привязанная к присутствию на экране</h3>
+
+      <p class="prose">Запускает корутину при входе в композицию, отменяет при уходе, перезапускает при
+      смене ключа. Рабочая лошадь: загрузка, ожидание, таймеры, разовые события.</p>
+
+      <p class="filename">CertificateScreen.kt</p>
+<pre><code>@Composable
+fun CertificateScreen(
+    certificateId: Long,
+    viewModel: CertificateViewModel = hiltViewModel(),
+    onBack: () -&gt; Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(certificateId) {
+        viewModel.load(certificateId = certificateId)
+    }
+
+    Scaffold(topBar = { CertificateTopBar(onBack = onBack) }) { padding -&gt;
+        when (state) {
+            is CertificateUiState.Loading -&gt; FullscreenProgress(Modifier.padding(padding))
+            is CertificateUiState.Error -&gt; ErrorStub(
+                error = (state as CertificateUiState.Error).message,
+                onRetry = { viewModel.load(certificateId = certificateId) },
+                modifier = Modifier.padding(padding)
+            )
+            is CertificateUiState.Content -&gt; CertificateContent(
+                certificate = (state as CertificateUiState.Content).certificate,
+                modifier = Modifier.padding(padding)
+            )
+        }
+    }
+}</code></pre>
+
+      <p class="filename">CertificateViewModel.kt</p>
+<pre><code>@HiltViewModel
+class CertificateViewModel @Inject constructor(
+    private val repository: CertificateRepository
+) : ViewModel() {
+
+    private val _state = MutableStateFlow&lt;CertificateUiState&gt;(CertificateUiState.Loading)
+    val state: StateFlow&lt;CertificateUiState&gt; = _state.asStateFlow()
+
+    fun load(certificateId: Long) {
+        viewModelScope.launch {
+            _state.value = CertificateUiState.Loading
+            runCatching { repository.getCertificate(id = certificateId) }
+                .onSuccess { certificate -&gt;
+                    _state.value = CertificateUiState.Content(certificate = certificate)
+                }
+                .onFailure { error -&gt;
+                    ensureActive()          // отмена тоже приходит сюда — пробрасываем ее дальше
+                    _state.value = CertificateUiState.Error(message = error.messageOrDefault())
+                }
+        }
+    }
+}</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Про ensureActive в onFailure</span>
+        <p>Отмена корутины приходит обычным исключением <code>CancellationException</code>, а
+        <code>runCatching</code> ловит любой <code>Throwable</code> — значит отмена попадает в
+        <code>onFailure</code> наравне с ошибкой сети. Без <code>ensureActive()</code> состояние
+        отмененной загрузки доедет до экрана: пользователь переключил сертификат, старый запрос
+        отменился и записал <code>Error</code> поверх <code>Loading</code> нового. Правило общее:
+        <code>runCatching</code> вокруг suspend-вызова обязан пробрасывать отмену дальше.</p>
+      </div>
+
+      <dl class="xp">
+        <dt>берем</dt><dd>нужна корутина, живущая столько же, сколько composable на экране</dd>
+        <dt>не берем</dt><dd>работа стартует по нажатию — это инструмент 2</dd>
+        <dt>ошибка</dt><dd><code>LaunchedEffect(Unit)</code>, когда тело читает меняющийся параметр</dd>
+      </dl>
+
+      <div class="note">
+        <span class="tag">Заметка про загрузку вообще</span>
+        <p>Вариант выше рабочий и читаемый, но не единственный. Часто чище, когда решение «пора
+        грузить» принимает сама ViewModel — через <code>SavedStateHandle</code> и
+        <code>flatMapLatest</code>, либо через <code>stateIn(WhileSubscribed(5_000))</code>, где
+        появление подписчика и есть сигнал. Тогда возврат на экран не порождает лишний запрос, а UI
+        вообще не участвует в решении.</p>
+      </div>
+
+      <h3>2. rememberCoroutineScope() — корутина в ответ на действие</h3>
+
+      <p class="prose">Начнем с проблемы, ради которой он существует: <b>composable-функция не
+      <code>suspend</code>, а многие UI-операции — <code>suspend</code></b>.</p>
+
+<pre class="bad"><code>Button(
+    onClick = {
+        snackbarHostState.showSnackbar(message = "Скопировано")   // не компилируется
+    }
+) { Text(text = "Скопировать") }</code></pre>
+
+      <p class="prose"><code>onClick</code> — обычная лямбда, из нее нельзя вызвать
+      <code>suspend</code>-функцию. Нужен скоуп. <code>LaunchedEffect</code> тут не подходит
+      принципиально: он запускается сам при появлении на экране, а не в момент нажатия — по клику его
+      никак не «вызвать».</p>
+
+<pre class="good"><code>val scope = rememberCoroutineScope()
+
+Button(
+    onClick = {
+        scope.launch { snackbarHostState.showSnackbar(message = "Скопировано") }
+    }
+) { Text(text = "Скопировать") }</code></pre>
+
+      <h4 style="margin:22px 0 6px;font-size:15.5px">Почему именно remember-версия, а не свой скоуп</h4>
+
+      <p class="prose">Скоуп создается один раз при входе в композицию и <b>отменяется, когда
+      composable из нее уходит</b>. Ушел с экрана посреди анимации скролла или показа снекбара —
+      корутина отменилась сама, без единой строки от тебя.</p>
+
+<pre class="bad"><code>val scope = CoroutineScope(Dispatchers.Main)   // новый скоуп на каждой рекомпозиции,
+                                               // никто его не отменяет — утечка</code></pre>
+
+      <p class="why">Внутри — <code>remember</code> плюс объект, реализующий тот самый
+      <code>RememberObserver</code> из раздела 03: в <code>onForgotten</code> он вызывает
+      <code>cancel()</code>. Тот же механизм, что у остальных эффектов.</p>
+
+      <h4 style="margin:22px 0 6px;font-size:15.5px">Где он реально нужен</h4>
+
+      <p class="prose">У UI-контроллеров Compose методы объявлены <code>suspend</code> — именно чтобы
+      анимация доигрывала и отменялась вместе с экраном. Это и есть основные потребители скоупа:</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Задача</th><th>Вызов</th></tr>
+        <tr><td>Показать снекбар</td><td class="mono">snackbarHostState.showSnackbar(message)</td></tr>
+        <tr><td>Проскроллить список к элементу</td><td class="mono">listState.animateScrollToItem(index)</td></tr>
+        <tr><td>Открыть или закрыть шторку</td><td class="mono">sheetState.show() / sheetState.hide()</td></tr>
+        <tr><td>Открыть боковое меню</td><td class="mono">drawerState.open()</td></tr>
+        <tr><td>Перелистнуть пейджер</td><td class="mono">pagerState.animateScrollToPage(page)</td></tr>
+        <tr><td>Прокрутить контент наверх</td><td class="mono">scrollState.animateScrollTo(0)</td></tr>
+      </table>
+      </div>
+
+      <p class="filename">CompanyScreen.kt — типичный набор сразу</p>
+<pre><code>@Composable
+fun CompanyScreen(viewModel: CompanyViewModel = hiltViewModel()) {
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val sheetState = rememberModalBottomSheetState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { scope.launch { listState.animateScrollToItem(index = 0) } }
+            ) { Icon(painter = painterResource(R.drawable.ds_arrow_up), contentDescription = null) }
+        }
+    ) { padding -&gt;
+        LazyColumn(state = listState, modifier = Modifier.padding(padding)) {
+            items(items = state.offers, key = { it.id }) { offer -&gt;
+                OfferRow(
+                    offer = offer,
+                    onDetailsClick = { scope.launch { sheetState.show() } },
+                    onCopyCode = {
+                        scope.launch { snackbarHostState.showSnackbar(message = "Код скопирован") }
+                    }
+                )
+            }
+        }
+    }
+}</code></pre>
+
+      <h4 style="margin:22px 0 6px;font-size:15.5px">Чего в него класть не надо</h4>
+
+      <p class="prose">Сетевые запросы и бизнес-логику. По клику вызывается обычная функция ViewModel,
+      а корутину она запускает у себя — в <code>viewModelScope</code>, который переживет и поворот
+      экрана, и уход composable из композиции.</p>
+
+<pre class="bad"><code>onClick = {
+    scope.launch { repository.pay(amount = amount) }   // повернул экран — платеж отменился
+}</code></pre>
+
+<pre class="good"><code>onClick = { viewModel.pay(amount = amount) }           // обычный вызов, корутина внутри VM</code></pre>
+
+      <div class="note">
+        <span class="tag">Разделение в одну строку</span>
+        <p>Началось само, потому что экран появился — <code>LaunchedEffect</code>. Началось потому, что
+        пользователь нажал, — <code>rememberCoroutineScope</code>. Работа переживает экран — вообще не
+        UI-скоуп, а <code>viewModelScope</code>.</p>
+      </div>
+
+      <dl class="xp">
+        <dt>берем</dt><dd>из колбэка надо вызвать suspend-функцию UI-контроллера: снекбар, скролл,
+        шторка, пейджер</dd>
+        <dt>не берем</dt><dd>работа начинается сама при появлении экрана; работа не должна умирать
+        вместе с экраном</dd>
+        <dt>ошибка</dt><dd><code>scope.launch { }</code> прямо в теле composable — кейс 3</dd>
+      </dl>
+
+      <h3>3. DisposableEffect(keys) — есть что освободить</h3>
+
+      <p class="prose">Единственный эффект с обязательной очисткой: без <code>onDispose</code> код не
+      компилируется. Слушатели, ресиверы, коллбэки системных сервисов, флаги окна.</p>
+
+      <p class="filename">ConnectivityBanner.kt</p>
+<pre><code>@Composable
+fun ConnectivityBanner(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var isOnline by remember { mutableStateOf(true) }
+
+    DisposableEffect(context) {
+        val manager = context.getSystemService(ConnectivityManager::class.java)
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { isOnline = true }
+            override fun onLost(network: Network) { isOnline = false }
+        }
+        manager.registerDefaultNetworkCallback(callback)
+
+        onDispose { manager.unregisterNetworkCallback(callback) }   // без этого — утечка
+    }
+
+    AnimatedVisibility(visible = !isOnline, modifier = modifier) {
+        OfflineStub(text = "Нет соединения")
+    }
+}</code></pre>
+
+      <dl class="xp">
+        <dt>берем</dt><dd>что-то регистрируется и обязано быть снято</dd>
+        <dt>не берем</dt><dd>освобождать нечего: пустой <code>onDispose</code> — признак неверного выбора</dd>
+        <dt>ошибка</dt><dd>ключ <code>Unit</code> при том, что тело читает меняющееся значение — кейс 12</dd>
+      </dl>
+
+      <h3>4. rememberUpdatedState(value) — свежее значение без перезапуска</h3>
+
+      <p class="prose">Кладет значение в state и переписывает его на каждом прогоне. Долгоживущий
+      эффект читает всегда актуальное, но рестарта не получает.</p>
+
+      <p class="filename">AutoDismissBanner.kt</p>
+<pre><code>@Composable
+fun AutoDismissBanner(
+    text: String,
+    onDismiss: () -&gt; Unit,          // родитель пересоздает эту лямбду на каждом своем прогоне
+    modifier: Modifier = Modifier
+) {
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+
+    LaunchedEffect(Unit) {          // отсчет запускается ровно один раз
+        delay(BANNER_VISIBLE_MILLIS)
+        currentOnDismiss()          // вызовется та лямбда, что актуальна сейчас
+    }
+
+    Surface(modifier = modifier, color = MaterialTheme.colorScheme.secondaryContainer) {
+        Text(text = text, modifier = Modifier.padding(16.dp))
+    }
+}
+
+private const val BANNER_VISIBLE_MILLIS = 5_000L</code></pre>
+
+      <p class="why">Внутри — <code>remember { mutableStateOf(value) }</code>, значение которого
+      переписывается при каждой рекомпозиции. Эффект держит ссылку на state, а не на само значение,
+      поэтому перезапускать его незачем.</p>
+
+      <dl class="xp">
+        <dt>берем</dt><dd>эффект длинный, значение меняется, перезапускать нельзя</dd>
+        <dt>не берем</dt><dd>смена значения как раз и должна перезапускать эффект — тогда это ключ</dd>
+        <dt>ошибка</dt><dd>обернуть все подряд: эффект перестанет реагировать на то, на что должен</dd>
+      </dl>
+
+      <h3>5. SideEffect { } — отдать значение наружу</h3>
+
+      <p class="prose">Выполняется после каждой успешной композиции, ключей не имеет. Единственная
+      задача: протолкнуть актуальное значение в объект, который про Compose ничего не знает.</p>
+
+<pre><code>@Composable
+fun AnalyticsUser(user: User) {
+    val analytics = LocalAnalytics.current
+
+    SideEffect {
+        analytics.setUserProperty(userId = user.id)   // объект живет вне композиции
+    }
+}</code></pre>
+
+      <dl class="xp">
+        <dt>берем</dt><dd>внешнему объекту нужно свежее значение после каждой удачной композиции</dd>
+        <dt>не берем</dt><dd>нужна однократность или отмена</dd>
+        <dt>ошибка</dt><dd>любая тяжелая работа: главный поток, столько раз, сколько было композиций</dd>
+      </dl>
+
+      <h3>6. produceState(initial, keys) — чужой источник превращается в состояние</h3>
+
+      <p class="prose">Внутри — <code>remember { mutableStateOf(initial) }</code> плюс
+      <code>LaunchedEffect</code>. Удобно для коллбэк-API и разовых suspend-вызовов, когда результат
+      нужен прямо как <code>State</code>.</p>
+
+<pre><code>@Composable
+fun rememberQrBitmap(payload: String): State&lt;Bitmap?&gt; =
+    produceState&lt;Bitmap?&gt;(initialValue = null, key1 = payload) {
+        value = withContext(Dispatchers.Default) {      // генерация тяжелая — уводим с main
+            QrGenerator.generate(payload = payload)
+        }
+    }
+
+@Composable
+fun LoyaltyQr(payload: String, modifier: Modifier = Modifier) {
+    val bitmap by rememberQrBitmap(payload = payload)
+
+    if (bitmap == null) {
+        QrPlaceholder(modifier = modifier)
+    } else {
+        Image(bitmap = bitmap!!.asImageBitmap(), contentDescription = null, modifier = modifier)
+    }
+}</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Частая подмена</span>
+        <p><code>produceState</code> вместо <code>collectAsStateWithLifecycle</code> для потока из
+        ViewModel. Внутри <code>LaunchedEffect</code>, то есть привязка к композиции, а не к lifecycle:
+        у свернутого приложения сбор продолжается. Кейс 9.</p>
+      </div>
+
+      <h3>7. snapshotFlow { } — мост из состояния в корутину</h3>
+
+      <p class="prose">Превращает чтение <code>State</code> в <code>Flow</code>. Подписывается на все
+      состояния, прочитанные внутри блока, и присылает значение при изменении — с
+      <code>distinctUntilChanged</code> по умолчанию.</p>
+
+      <p class="filename">OperationsScreen.kt</p>
+<pre><code>@Composable
+fun OperationsScreen(viewModel: OperationsViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .filterNotNull()
+            .distinctUntilChanged()
+            .collect { lastVisible -&gt;
+                if (lastVisible &gt;= state.items.lastIndex - PREFETCH_DISTANCE) {
+                    viewModel.loadNextPage()
+                }
+            }
+    }
+
+    LazyColumn(state = listState) {
+        items(items = state.items, key = { it.id }) { operation -&gt;
+            OperationRow(operation = operation)
+        }
+        if (state.isPaginating) {
+            item { PaginationProgress() }
+        }
+    }
+}
+
+private const val PREFETCH_DISTANCE = 5</code></pre>
+
+      <dl class="xp">
+        <dt>берем</dt><dd>реакция на изменение состояния нужна в корутине: пагинация, аналитика
+        скролла, автосохранение</dd>
+        <dt>не берем</dt><dd>значение нужно для отрисовки — читай его прямо в теле</dd>
+        <dt>ошибка</dt><dd>положить состояние скролла в ключ эффекта — кейс 8</dd>
+      </dl>
+
+      <h3>8. Lifecycle-эффекты — привязка к экрану, а не к композиции</h3>
+
+      <p class="prose">Из <code>androidx.lifecycle:lifecycle-runtime-compose</code>. Закрывают дыру из
+      раздела 02: композиция жива, пока приложение свернуто, а реагировать надо на
+      <code>onStart</code> и <code>onResume</code>.</p>
+
+<pre><code>@Composable
+fun ScannerScreen(viewModel: ScannerViewModel = hiltViewModel()) {
+    // поток собирается только между onStart и onStop
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // камера включается на onResume и гасится на onPause
+    LifecycleResumeEffect(Unit) {
+        viewModel.startCamera()
+        onPauseOrDispose { viewModel.stopCamera() }
+    }
+
+    ScannerContent(state = state)
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Инструмент</th><th>Когда</th></tr>
+        <tr><td class="mono">collectAsStateWithLifecycle()</td>
+            <td>Дефолт для любого <code>Flow</code> из ViewModel</td></tr>
+        <tr><td class="mono">LifecycleEventEffect(ON_RESUME)</td>
+            <td>Разовое действие на событие: обновить данные при возврате на экран</td></tr>
+        <tr><td class="mono">LifecycleResumeEffect { … onPauseOrDispose { } }</td>
+            <td>Парное действие: включить на <code>RESUME</code>, выключить на <code>PAUSE</code></td></tr>
+        <tr><td class="mono">repeatOnLifecycle(STARTED)</td>
+            <td>Ручной сбор потока, когда нужен контроль над обработкой каждого элемента</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t7"><span class="num">07</span> Дерево решений</h2>
+
+      <pre class="ascii"><code>Что нужно сделать?
+│
+├─ отреагировать на клик, свайп, результат диалога
+│     └─ rememberCoroutineScope().launch { }
+│
+├─ запустить работу, пока экран показан
+│     ├─ зависит от параметра  → LaunchedEffect(параметр)
+│     └─ ни от чего не зависит → LaunchedEffect(Unit)
+│
+├─ работа только на видимом экране, не в фоне
+│     └─ collectAsStateWithLifecycle / LifecycleResumeEffect
+│
+├─ зарегистрировать слушателя, ресивер, флаг окна
+│     └─ DisposableEffect(ключи) { … onDispose { снять } }
+│
+├─ отреагировать на изменение состояния внутри корутины
+│     └─ snapshotFlow { … }.collect { }
+│
+├─ отдать значение объекту вне Compose
+│     └─ SideEffect { }
+│
+├─ длинному эффекту нужен свежий колбэк без перезапуска
+│     └─ rememberUpdatedState(значение)
+│
+└─ превратить чужой источник в State
+      └─ produceState(initial, ключи)</code></pre>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Двенадцать кейсов</h2>
+        <p>Одна и та же схема в каждом: задача с экрана, код как его обычно пишут, что при этом видит
+        пользователь, объяснение через механику из части I и правильный вариант. Кейсы независимы,
+        можно читать вразнобой.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Открыли заказ — надо загрузить данные</h3>
+        <p class="task">Экран деталей заказа. Данные грузятся при открытии. Из этого же экрана стрелками
+        переключаются на соседний заказ, не выходя обратно в список.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">OrderDetailsScreen.kt</p>
+<pre class="bad"><code>@Composable
+fun OrderDetailsScreen(
+    orderId: Long,
+    viewModel: OrderDetailsViewModel = hiltViewModel(),
+    onBack: () -&gt; Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadOrder(orderId = orderId)
+    }
+
+    Scaffold(
+        topBar = {
+            OrderTopBar(
+                title = "Заказ №${state.number}",
+                onBack = onBack,
+                onPrevious = { viewModel.onPreviousOrder() },
+                onNext = { viewModel.onNextOrder() }
+            )
+        }
+    ) { padding -&gt;
+        OrderContent(
+            items = state.items,
+            total = state.total,
+            status = state.status,
+            onRepeat = { viewModel.repeatOrder() },
+            modifier = Modifier.padding(padding)
+        )
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Открыл заказ №100 — все верно, данные загрузились</li>
+          <li>Нажал стрелку «следующий», в шапке появилось «Заказ №101»</li>
+          <li class="hit">Состав, сумма и статус остались от заказа №100</li>
+          <li class="hit">Нажал «Повторить заказ» — оформился не тот заказ</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Смена <code>orderId</code> — это рекомпозиция, а не новое появление функции: группа в памяти
+        композиции та же самая. Ключ <code>Unit</code> равен сам себе, значит рантайму нечего
+        выбрасывать и нечего создавать заново (раздел 03, строка «ключи не изменились»). Корутина
+        стартовала один раз, с <code>orderId = 100</code>, и это значение в ней так и осталось.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>LaunchedEffect(orderId) {
+    viewModel.loadOrder(orderId = orderId)
+}</code></pre>
+        <p>Вариант надежнее — вообще убрать загрузку из UI. Тогда экран не решает, когда грузить, и
+        повторный вход в композицию не порождает лишний запрос:</p>
+<pre class="good"><code>@HiltViewModel
+class OrderDetailsViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val repository: OrderRepository
+) : ViewModel() {
+
+    private val orderId = savedStateHandle.getStateFlow(key = "orderId", initialValue = 0L)
+
+    val state: StateFlow&lt;OrderUiState&gt; = orderId
+        .filter { it != 0L }
+        .flatMapLatest { id -&gt; repository.observeOrder(id = id) }   // сменился id — новый поток
+        .map { OrderUiState.map(order = it) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = OrderUiState.EMPTY
+        )
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Все, что тело эффекта читает и что может измениться, обязано
+        стоять в скобках.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Отправить событие «экран показан» в аналитику</h3>
+        <p class="task">Продукт хочет знать, сколько раз открывали «Кошелек» и сколько карт при этом
+        было у пользователя.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">WalletScreen.kt</p>
+<pre class="bad"><code>@Composable
+fun WalletScreen(
+    viewModel: WalletViewModel = hiltViewModel(),
+    onCardClick: (Long) -&gt; Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    analytics.logScreen(screen = "wallet", cardsCount = state.cards.size)
+
+    LazyColumn {
+        items(items = state.cards, key = { it.id }) { card -&gt;
+            LoyaltyCardRow(card = card, onClick = { onCardClick(card.id) })
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Пользователь не видит ничего — и в этом коварство кейса</li>
+          <li class="hit">В отчете 40 000 показов «Кошелька» при 5 000 активных пользователей</li>
+          <li class="hit">Часть событий с <code>cardsCount = 0</code>: они ушли до того, как приехали
+          данные</li>
+          <li class="hit">Конверсия «показ → тап по карте» падает вдвое, продукт делает неверный вывод</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Тело выполняется столько раз, сколько было рекомпозиций: пришли карты — прогон, обновился
+        баланс — прогон, снялся спиннер — прогон (раздел 01, первое свойство прогона). Гарантии «один
+        вызов на один показ экрана» у тела нет и быть не может.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun WalletScreen(
+    viewModel: WalletViewModel = hiltViewModel(),
+    onCardClick: (Long) -&gt; Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {                                   // ровно один раз на показ экрана
+        analytics.logScreen(screen = "wallet")
+    }
+
+    LazyColumn {
+        items(items = state.cards, key = { it.id }) { card -&gt;
+            LoyaltyCardRow(card = card, onClick = { onCardClick(card.id) })
+        }
+    }
+}</code></pre>
+        <p>Если в событии нужны данные, которые приезжают позже, ключом становится признак их
+        готовности, а не сами данные:</p>
+<pre class="good"><code>LaunchedEffect(state.isLoaded) {
+    if (state.isLoaded) {
+        analytics.logScreen(screen = "wallet", cardsCount = state.cards.size)
+    }
+}</code></pre>
+        <p>А если считать надо именно возвраты на экран, а не появление в композиции, —
+        <code>LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { analytics.logScreen(…) }</code>.</p>
+
+        <div class="rule"><b>Правило</b>Глагол в теле composable — ошибка. Тело описывает картинку;
+        <code>log</code>, <code>load</code>, <code>send</code>, <code>navigate</code> в нем не живут.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Обновить список компаний</h3>
+        <p class="task">Экран «Мои компании»: список подтягивается при открытии и по свайпу вниз.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">CompaniesScreen.kt</p>
+<pre class="bad"><code>@Composable
+fun CompaniesScreen(viewModel: CompaniesViewModel = hiltViewModel()) {
+    val scope = rememberCoroutineScope()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    scope.launch { viewModel.refresh() }              // «пусть обновится при открытии»
+
+    PullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = { scope.launch { viewModel.refresh() } }
+    ) {
+        LazyColumn {
+            items(items = state.items, key = { it.id }) { company -&gt;
+                CompanyRow(company = company)
+            }
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Экран открылся, пошла загрузка</li>
+          <li class="hit">Индикатор не останавливается: каждый ответ дает рекомпозицию, а она — новый
+          запрос</li>
+          <li class="hit">Список дергается, сервер получает десятки одинаковых запросов в секунду</li>
+          <li class="hit">Ушел с экрана — часть запросов еще какое-то время висит</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>rememberCoroutineScope</code> дает скоуп, но не решает, когда запускать корутину.
+        Строка <code>scope.launch { }</code> — обычная строка тела, она выполняется на каждом прогоне
+        и добавляет еще одну корутину. Получается положительная обратная связь: запрос → новые данные
+        → рекомпозиция → запрос.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun CompaniesScreen(viewModel: CompaniesViewModel = hiltViewModel()) {
+    val scope = rememberCoroutineScope()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.refresh() }      // само, при появлении экрана
+
+    PullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = { scope.launch { viewModel.refresh() } }   // по жесту пользователя
+    ) {
+        LazyColumn {
+            items(items = state.items, key = { it.id }) { company -&gt;
+                CompanyRow(company = company)
+            }
+        }
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b><code>rememberCoroutineScope</code> — только внутри колбэков.
+        Само стартующее — <code>LaunchedEffect</code>.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Таймер «Запросить код повторно»</h3>
+        <p class="task">Экран ввода кода из SMS. Шестьдесят секунд идет отсчет, потом кнопка становится
+        активной и родителю сообщается, что можно запрашивать код заново.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">ResendTimer.kt</p>
+<pre class="bad"><code>@Composable
+fun ResendTimer(
+    seconds: Int,
+    onFinished: () -&gt; Unit,
+    modifier: Modifier = Modifier
+) {
+    var left by remember { mutableIntStateOf(seconds) }
+
+    LaunchedEffect(onFinished) {              // «зависимость же — колбэк»
+        while (left &gt; 0) {
+            delay(1_000)
+            left--
+        }
+        onFinished()
+    }
+
+    Text(
+        text = "Запросить повторно через $left с",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = modifier
+    )
+}</code></pre>
+        <p class="filename">Родитель — обратите внимание на лямбду</p>
+<pre class="bad"><code>ResendTimer(
+    seconds = 60,
+    onFinished = { viewModel.onResendAvailable() }   // новый объект на каждом прогоне родителя
+)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Отсчет пошел: 60, 59, 58…</li>
+          <li class="hit">Число замирает или откатывается назад, кнопка не активируется никогда</li>
+          <li class="hit">Чем чаще перерисовывается родитель, тем сильнее отстает таймер</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Лямбда, захватывающая <code>viewModel</code>, — новый объект на каждом прогоне родителя,
+        поэтому ключ «изменился». Рантайм забывает старый эффект (отменяет корутину прямо посреди
+        <code>delay</code>) и запускает новый (раздел 05, строка «нестабильный ключ»). Отсчет
+        начинается сначала, а <code>left</code> при этом уже уменьшился — отсюда рваное поведение.</p>
+        <p>Сравни с кейсом 1: там ключа не хватало, здесь ключ лишний и вдобавок нестабильный.
+        Механизм один и тот же — сравнение через <code>equals</code>.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun ResendTimer(
+    seconds: Int,
+    onFinished: () -&gt; Unit,
+    modifier: Modifier = Modifier
+) {
+    var left by rememberSaveable { mutableIntStateOf(seconds) }   // переживет поворот
+    val currentOnFinished by rememberUpdatedState(onFinished)     // свежий колбэк без рестарта
+
+    LaunchedEffect(seconds) {                                     // рестарт только при новом запросе кода
+        while (left &gt; 0) {
+            delay(1_000)
+            left--
+        }
+        currentOnFinished()
+    }
+
+    Text(
+        text = "Запросить повторно через $left с",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = modifier
+    )
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Лямбда в ключах — почти всегда ошибка. Нужен свежий колбэк без
+        перезапуска — <code>rememberUpdatedState</code>.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Подписка на сканер</h3>
+        <p class="task">Экран сканирования QR: пока он открыт, слушаем результаты сканера и отдаем код
+        наверх.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">ScannerScreen.kt</p>
+<pre class="bad"><code>@Composable
+fun ScannerScreen(
+    scanner: BarcodeScanner,
+    onCode: (String) -&gt; Unit,
+    onClose: () -&gt; Unit
+) {
+    LaunchedEffect(scanner) {
+        scanner.addListener { code -&gt; onCode(code) }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CameraPreview(modifier = Modifier.matchParentSize())
+        ScannerOverlay(onClose = onClose)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Первый заход: отсканировал — сработало один раз, все хорошо</li>
+          <li>Вышел назад, зашел снова, отсканировал</li>
+          <li class="hit">Код обработан дважды: два перехода, два запроса, двойное списание бонусов</li>
+          <li class="hit">На пятый заход — пять срабатываний; в логах ошибки на уже закрытом экране</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Корутину рантайм отменяет сам (<code>onForgotten</code> из раздела 03), а регистрацию
+        слушателя — нет: <code>addListener</code> уже выполнился, и сканер держит ссылку на лямбду
+        вместе со всем, что она захватила. Отмена корутины на это не влияет никак. Каждое появление
+        экрана добавляет слушателя, старые продолжают жить — это утечка в чистом виде.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun ScannerScreen(
+    scanner: BarcodeScanner,
+    onCode: (String) -&gt; Unit,
+    onClose: () -&gt; Unit
+) {
+    val currentOnCode by rememberUpdatedState(onCode)     // лямбда свежая, подписка стабильная
+
+    DisposableEffect(scanner) {
+        val listener = ScanListener { code -&gt; currentOnCode(code) }
+        scanner.addListener(listener)
+        onDispose { scanner.removeListener(listener) }    // компилятор не даст забыть
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CameraPreview(modifier = Modifier.matchParentSize())
+        ScannerOverlay(onClose = onClose)
+    }
+}</code></pre>
+        <p>Признак выбора простой: <b>что-то регистрируется — значит должно быть снято</b>. Обратное
+        тоже верно: пустой <code>onDispose</code> означает, что нужен был <code>LaunchedEffect</code>.</p>
+
+        <div class="rule"><b>Правило</b>На каждый <code>add</code>, <code>register</code>,
+        <code>subscribe</code> — свой <code>remove</code> в <code>onDispose</code>.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Снекбар с ошибкой оплаты</h3>
+        <p class="task">Оплата не прошла — показать снекбар с текстом ошибки. Один раз.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">CheckoutViewModel.kt</p>
+<pre class="bad"><code>@HiltViewModel
+class CheckoutViewModel @Inject constructor(
+    private val repository: CheckoutRepository
+) : ViewModel() {
+
+    val errorMessage = MutableStateFlow&lt;String?&gt;(null)
+
+    fun pay(amount: Long) {
+        viewModelScope.launch {
+            runCatching { repository.pay(amount = amount) }
+                .onFailure { errorMessage.value = it.messageOrDefault() }
+        }
+    }
+}</code></pre>
+        <p class="filename">CheckoutScreen.kt</p>
+<pre class="bad"><code>@Composable
+fun CheckoutScreen(viewModel: CheckoutViewModel = hiltViewModel()) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val error by viewModel.errorMessage.collectAsStateWithLifecycle()
+
+    LaunchedEffect(error) {
+        error?.let { snackbarHostState.showSnackbar(message = it) }
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding -&gt;
+        CheckoutContent(onPay = { viewModel.pay(amount = it) }, modifier = Modifier.padding(padding))
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Оплата не прошла, снекбар показался — пока правильно</li>
+          <li>Повернул телефон, чтобы удобнее ввести данные карты</li>
+          <li class="hit">Снекбар с той же ошибкой выезжает второй раз</li>
+          <li class="hit">Свернул и вернулся — снова та же ошибка, хотя ничего не нажимал</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Состояние и событие ведут себя противоположно: <b>состояние обязано пережить поворот
+        экрана, событие обязано его не пережить</b>. В <code>StateFlow</code> лежит последнее значение,
+        и новая композиция читает его как ни в чем не бывало — для нее это «текущая ошибка», а не
+        «ошибка, которую уже показали».</p>
+
+        <div class="lbl good">Как надо</div>
+        <p class="filename">CheckoutViewModel.kt — событие гасится</p>
+<pre class="good"><code>data class CheckoutUiState(
+    val isPaying: Boolean = false,
+    val message: String? = null          // null = показывать нечего
+)
+
+@HiltViewModel
+class CheckoutViewModel @Inject constructor(
+    private val repository: CheckoutRepository
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(CheckoutUiState())
+    val state: StateFlow&lt;CheckoutUiState&gt; = _state.asStateFlow()
+
+    fun pay(amount: Long) {
+        viewModelScope.launch {
+            _state.update { it.copy(isPaying = true) }
+            runCatching { repository.pay(amount = amount) }
+                .onFailure { error -&gt;
+                    ensureActive()
+                    _state.update { it.copy(isPaying = false, message = error.messageOrDefault()) }
+                }
+        }
+    }
+
+    fun onMessageShown() {
+        _state.update { it.copy(message = null) }      // событие погашено
+    }
+}</code></pre>
+        <p class="filename">CheckoutScreen.kt</p>
+<pre class="good"><code>LaunchedEffect(state.message) {
+    val message = state.message ?: return@LaunchedEffect
+    snackbarHostState.showSnackbar(message = message)
+    viewModel.onMessageShown()
+}</code></pre>
+        <p>Альтернатива — <code>Channel</code> с <code>receiveAsFlow</code>: он не хранит последнее
+        значение и буферизует событие, пока UI не начал слушать. Оба варианта рабочие, важно одно:
+        после обработки событие должно перестать существовать.</p>
+
+        <div class="rule"><b>Правило</b>Разовое событие живет до первой обработки. Хранится как
+        состояние — гасится явно.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Переход на экран успеха после оплаты</h3>
+        <p class="task">Оплата прошла — уводим пользователя на экран «Готово».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun PaymentScreen(
+    navController: NavController,
+    viewModel: PaymentViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isPaid) {
+        if (state.isPaid) {
+            navController.navigate(route = Routes.Success)
+        }
+    }
+
+    PaymentContent(state = state, onPay = { viewModel.pay() })
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Оплата прошла, открылся экран «Готово»</li>
+          <li>Нажал «Назад», ожидая вернуться в каталог</li>
+          <li class="hit">Снова экран «Готово»: в стеке их два</li>
+          <li class="hit">Иногда переход срабатывает после того, как пользователь уже ушел сам</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Два наложившихся эффекта. Первое: флаг <code>isPaid</code> остается в состоянии и после
+        перехода, поэтому возврат на экран пересоздает композицию и эффект отрабатывает снова.
+        Второе: между отправкой события и его обработкой экран мог смениться, и
+        <code>navigate</code> выполняется уже из чужого места графа.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun PaymentScreen(
+    onPaid: (orderId: Long) -&gt; Unit,          // экран не знает про navController
+    viewModel: PaymentViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.paidOrderId) {
+        val orderId = state.paidOrderId ?: return@LaunchedEffect
+        onPaid(orderId)
+        viewModel.onPaidHandled()             // событие погашено
+    }
+
+    PaymentContent(state = state, onPay = { viewModel.pay() })
+}</code></pre>
+        <p class="filename">Граф навигации — решение принимается здесь</p>
+<pre class="good"><code>composable&lt;Routes.Payment&gt; {
+    PaymentScreen(
+        onPaid = { orderId -&gt;
+            if (navController.currentDestination?.hasRoute&lt;Routes.Payment&gt;() == true) {
+                navController.navigate(route = Routes.Success(orderId = orderId)) {
+                    popUpTo&lt;Routes.Payment&gt; { inclusive = true }   // назад на оплату не возвращаемся
+                }
+            }
+        }
+    )
+}</code></pre>
+        <p>Проверка текущего destination перед переходом — то же правило, что действует в нашем
+        XML-коде, и в Compose оно не отменяется.</p>
+
+        <div class="rule"><b>Правило</b>Навигация из эффекта — только с гашением события и проверкой,
+        что экран все еще тот.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Подгрузка следующей страницы операций</h3>
+        <p class="task">История операций, постраничная загрузка: доскроллил почти до конца — грузим
+        следующую страницу.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun OperationsScreen(viewModel: OperationsViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState.firstVisibleItemIndex) {
+        if (listState.firstVisibleItemIndex &gt; state.items.size - 5) {
+            viewModel.loadNextPage()
+        }
+    }
+
+    LazyColumn(state = listState) {
+        items(items = state.items, key = { it.id }) { operation -&gt;
+            OperationRow(operation = operation)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Скроллит список — на глаз работает</li>
+          <li class="hit">Прокрутка подтормаживает: эффект перезапускается на каждый сдвиг строки</li>
+          <li class="hit">Быстрым свайпом можно проскочить порог, и подгрузка не срабатывает вовсе</li>
+          <li class="hit">Иногда уходят два одинаковых запроса подряд</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Состояние скролла в ключе — это перезапуск эффекта на каждое изменение, десятки раз в
+        секунду (раздел 05, «избыток»). Обратный вариант, <code>LaunchedEffect(Unit)</code> с чтением
+        индекса внутри, не работает по другой причине: <b>корутина не подписывается на состояние</b>.
+        Композиция наблюдает за <code>State</code>, корутина — нет.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>LaunchedEffect(listState) {
+    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+        .filterNotNull()
+        .distinctUntilChanged()
+        .collect { lastVisible -&gt;
+            if (lastVisible &gt;= state.items.lastIndex - PREFETCH_DISTANCE) {
+                viewModel.loadNextPage()      // ViewModel сама игнорирует повторный вызов,
+            }                                 // пока страница уже грузится
+        }
+}</code></pre>
+        <p><code>snapshotFlow</code> подписывается на чтения внутри своего блока и присылает значение
+        при изменении, уже с <code>distinctUntilChanged</code>. Эффект при этом стартует один раз.</p>
+
+        <div class="rule"><b>Правило</b>Реакция на изменение состояния внутри корутины —
+        <code>snapshotFlow</code>, а не ключ эффекта.</div>
+      </section>
+
+      <section class="case" id="c9">
+        <h3>Кейс 9. Баланс в шапке кошелька</h3>
+        <p class="task">Баланс приходит потоком из ViewModel и должен обновляться в реальном времени,
+        пока пользователь смотрит на экран.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun BalanceHeader(viewModel: WalletViewModel, modifier: Modifier = Modifier) {
+    val balance by produceState(initialValue = 0L) {
+        viewModel.balanceFlow.collect { value = it }
+    }
+
+    Text(
+        text = balance.formatAsPoints(),
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = modifier
+    )
+}</code></pre>
+        <p>Тот же баг, но в более привычной записи:</p>
+<pre class="bad"><code>val balance by viewModel.balanceFlow.collectAsState(initial = 0L)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>На экране все верно, баланс живой</li>
+          <li>Свернул приложение и забыл о нем на час</li>
+          <li class="hit">Батарея садится быстрее обычного, в статистике заметный трафик</li>
+          <li class="hit">Сокет живет в фоне, сервер держит соединение, аналитика считает активность</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Внутри <code>produceState</code> — <code>remember</code> плюс <code>LaunchedEffect</code>,
+        то есть привязка к композиции. А композиция никуда не девается, когда приложение свернули:
+        экран по-прежнему в графе, функция по-прежнему в композиции, корутина работает. Жизненный цикл
+        экрана и присутствие в композиции — разные вещи (раздел 02), и эффекты знают только про
+        второе.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun BalanceHeader(viewModel: WalletViewModel, modifier: Modifier = Modifier) {
+    val balance by viewModel.balance.collectAsStateWithLifecycle()   // только между onStart и onStop
+
+    Text(
+        text = balance.formatAsPoints(),
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = modifier
+    )
+}</code></pre>
+        <p class="filename">WalletViewModel.kt — вторая половина решения</p>
+<pre class="good"><code>val balance: StateFlow&lt;Long&gt; = repository.observeBalance()
+    .stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),   // свернули — через 5 с источник отключился
+        initialValue = 0L
+    )</code></pre>
+        <p>Пять секунд задержки нужны, чтобы поворот экрана не рвал подписку: подписчик исчезает и
+        появляется снова быстрее этого срока. <code>produceState</code> остается для источников без
+        своего адаптера — коллбэк-API, разовый suspend-вызов.</p>
+
+        <div class="rule"><b>Правило</b>Любой <code>Flow</code> из ViewModel —
+        <code>collectAsStateWithLifecycle</code>. Без вариантов.</div>
+      </section>
+
+      <section class="case" id="c10">
+        <h3>Кейс 10. Отдать значение объекту, который не знает про Compose</h3>
+        <p class="task">В аналитике должен стоять идентификатор пользователя, чтобы события уходили с
+        правильным атрибутом.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun App(user: User) {
+    LaunchedEffect(user.id) {
+        analytics.setUserProperty(userId = user.id)
+    }
+    AppNavHost(user = user)
+}</code></pre>
+
+        <div class="lbl why">В чем разница</div>
+        <p>Катастрофы нет: код рабочий. Но <code>LaunchedEffect</code> — это корутина с отменой и
+        перезапуском, а задача другая: протолкнуть свежее значение наружу после того, как композиция
+        успешно применилась. Для нее есть <code>SideEffect</code> — без корутины, без ключей, ровно
+        один вызов на каждую удачную композицию (раздел 04).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun App(user: User) {
+    SideEffect {
+        analytics.setUserProperty(userId = user.id)
+    }
+    AppNavHost(user = user)
+}</code></pre>
+
+        <div class="lbl bad">А вот это уже настоящая ошибка</div>
+<pre class="bad"><code>SideEffect {
+    prefs.edit().putString("last_screen", screen).commit()   // запись на диск, main thread,
+}                                                            // на каждой композиции</code></pre>
+        <p>Тело <code>SideEffect</code> выполняется на главном потоке столько раз, сколько было
+        композиций. Все, что тяжелее присваивания, туда класть нельзя: ни диск, ни сеть, ни разбор
+        json.</p>
+
+        <div class="rule"><b>Правило</b><code>SideEffect</code> — только легкая передача значения
+        наружу. Нужна отмена или однократность — <code>LaunchedEffect</code>.</div>
+      </section>
+
+      <section class="case" id="c11">
+        <h3>Кейс 11. Считать показы баннеров в ленте</h3>
+        <p class="task">Лента с баннерами. Нужно знать, какие баннеры пользователь реально видел, —
+        по одному событию на баннер.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun FeedScreen(
+    banners: List&lt;Banner&gt;,
+    onBannerShown: (Long) -&gt; Unit,
+    onBannerClick: (Long) -&gt; Unit
+) {
+    LazyColumn {
+        items(items = banners, key = { it.id }) { banner -&gt;
+            LaunchedEffect(banner.id) {
+                onBannerShown(banner.id)
+            }
+            BannerCard(banner = banner, onClick = { onBannerClick(banner.id) })
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Пролистал ленту вниз и обратно вверх пару раз</li>
+          <li class="hit">У баннера накрутилось шесть показов вместо одного</li>
+          <li class="hit">Рекламодателю уходит завышенная статистика, отчеты расходятся с бэкендом</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Элемент, уехавший за пределы экрана, <b>уходит из композиции</b> вместе со своими эффектами,
+        а при обратном скролле входит в нее заново (раздел 02). Для <code>LaunchedEffect</code> это
+        полноценное новое появление: <code>onRemembered</code>, старт корутины. «Вход в композицию» и
+        «пользователь увидел» — разные события, и в списках они расходятся сильнее всего.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun FeedScreen(
+    banners: List&lt;Banner&gt;,
+    viewModel: FeedViewModel = hiltViewModel(),
+    onBannerClick: (Long) -&gt; Unit
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.map { it.key } }
+            .distinctUntilChanged()
+            .collect { visibleKeys -&gt; viewModel.onBannersVisible(keys = visibleKeys) }
+    }
+
+    LazyColumn(state = listState) {
+        items(items = banners, key = { it.id }) { banner -&gt;
+            BannerCard(banner = banner, onClick = { onBannerClick(banner.id) })
+        }
+    }
+}</code></pre>
+        <p class="filename">FeedViewModel.kt — однократность живет здесь</p>
+<pre class="good"><code>private val reportedBanners = mutableSetOf&lt;Long&gt;()
+
+fun onBannersVisible(keys: List&lt;Any&gt;) {
+    keys.filterIsInstance&lt;Long&gt;()
+        .filter { reportedBanners.add(it) }     // add вернет false, если уже отправляли
+        .forEach { analytics.bannerShown(bannerId = it) }
+}</code></pre>
+        <p>Общий принцип: <b>то, что должно случиться один раз за сессию, не может жить в эффекте
+        элемента списка</b> — его жизненный цикл слишком короткий.</p>
+
+        <div class="rule"><b>Правило</b>Эффект внутри <code>item { }</code> повторяется при каждом
+        появлении элемента. Однократность обеспечивается снаружи.</div>
+      </section>
+
+      <section class="case" id="c12">
+        <h3>Кейс 12. Экран не должен гаснуть во время игры</h3>
+        <p class="task">Пока идет раунд, экран не засыпает. Раунд начинается и заканчивается, экран при
+        этом остается открытым.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun GameScreen(viewModel: GameViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val window = (LocalContext.current as Activity).window
+
+    DisposableEffect(Unit) {
+        if (state.isPlaying) window.addFlags(FLAG_KEEP_SCREEN_ON)
+        onDispose { window.clearFlags(FLAG_KEEP_SCREEN_ON) }
+    }
+
+    GameContent(state = state, onStart = { viewModel.startRound() })
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Зашел на экран, раунд еще не начался</li>
+          <li>Начал играть</li>
+          <li class="hit">Экран гаснет посреди раунда: флаг не выставился, при входе
+          <code>isPlaying</code> был <code>false</code></li>
+          <li class="hit">Обратный случай — вошел во время раунда, раунд кончился, а экран продолжает
+          гореть и жрет батарею</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Тело читает <code>state.isPlaying</code>, а в ключах его нет. Эффект отработал один раз при
+        входе и больше никогда. Тот же механизм, что в кейсе 1, но заметить труднее:
+        <code>isPlaying</code> — не параметр функции, а вложенное поле состояния, и глаз за него не
+        цепляется.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>DisposableEffect(state.isPlaying) {
+    if (state.isPlaying) window.addFlags(FLAG_KEEP_SCREEN_ON)
+    onDispose { window.clearFlags(FLAG_KEEP_SCREEN_ON) }
+}</code></pre>
+        <p>Порядок при смене ключа: сначала <code>onDispose</code> старого захода, потом тело нового
+        (раздел 04). Флаг не задвоится и не потеряется.</p>
+
+        <div class="rule"><b>Правило</b>Проверка на ревью в одно движение: прочитать тело эффекта и
+        сверить каждое изменяемое имя со скобками — включая поля состояния.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <h3>Симптом на экране — номер кейса</h3>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видно</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Данные от предыдущего элемента после переключения</td><td>Недостача ключей</td><td class="num">1</td></tr>
+        <tr><td>Показов в аналитике втрое больше пользователей</td><td>Действие в теле composable</td><td class="num">2</td></tr>
+        <tr><td>Индикатор не останавливается, запросы по кругу</td><td>Запуск корутины в теле</td><td class="num">3</td></tr>
+        <tr><td>Таймер замирает или откатывается</td><td>Лямбда в ключах</td><td class="num">4</td></tr>
+        <tr><td>Коллбэк срабатывает кратное число раз</td><td>Регистрация без снятия</td><td class="num">5</td></tr>
+        <tr><td>Снекбар повторяется после поворота</td><td>Событие хранится как состояние</td><td class="num">6</td></tr>
+        <tr><td>Два одинаковых экрана в стеке</td><td>Навигация без гашения и проверки</td><td class="num">7</td></tr>
+        <tr><td>Скролл тормозит, подгрузка через раз</td><td>Состояние скролла в ключе</td><td class="num">8</td></tr>
+        <tr><td>Трафик и разряд у свернутого приложения</td><td>Сбор потока без lifecycle</td><td class="num">9</td></tr>
+        <tr><td>Фриз при частых обновлениях</td><td>Тяжелая работа в SideEffect</td><td class="num">10</td></tr>
+        <tr><td>Завышенные показы элементов списка</td><td>Эффект внутри item</td><td class="num">11</td></tr>
+        <tr><td>Поведение включилось один раз и не выключается</td><td>Поле состояния не в ключах</td><td class="num">12</td></tr>
+      </table>
+      </div>
+
+      <h3>Чеклист ревью</h3>
+
+      <ol class="steps">
+        <li>В теле composable нет глаголов: только описание UI и вычисление значений для него.</li>
+        <li>У каждого эффекта в ключах — все меняющиеся имена из тела, включая поля состояния.</li>
+        <li>Ключи стабильны: не лямбда, не собранный по месту объект, не список.</li>
+        <li>Все, что регистрируется, снимается в <code>onDispose</code>; пустого
+        <code>onDispose</code> нет.</li>
+        <li>Потоки из ViewModel собираются через <code>collectAsStateWithLifecycle</code>.</li>
+        <li>Разовые события гасятся после обработки; навигация защищена проверкой destination.</li>
+        <li>Реакция на состояние внутри корутины — через <code>snapshotFlow</code>.</li>
+        <li><code>rememberCoroutineScope</code> используется только внутри колбэков.</li>
+        <li>Эффекты внутри элементов списка осознаны: вход в композицию у них повторяется.</li>
+        <li>Тяжелая работа внутри эффекта уходит с главного потока.</li>
+      </ol>
+
+      <div class="note ok">
+        <span class="tag">Если запоминать одно</span>
+        <p>Эффект — объект в памяти композиции, а его ключи — ключи <code>remember</code>. Отсюда
+        выводится каждый кейс выше: ключ не изменился — эффект работает со старым значением; изменился
+        — старое отменяется и запускается заново; объект ушел из композиции — отмена. Все остальное это
+        выбор инструмента под вопрос «сколько раз это должно случиться и что будет, когда экран
+        уйдет».</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    10.09.2026 · Задание: <a href="side-effects-tasks.html">двенадцать сниппетов и экран</a> ·
+    Источники:
+    <a href="https://developer.android.com/develop/ui/compose/side-effects">Side-effects in Compose</a> ·
+    <a href="https://developer.android.com/topic/architecture/ui-layer/events">UI events</a> ·
+    <a href="https://developer.android.com/develop/ui/compose/state">State and Jetpack Compose</a>
+  </footer>
+</div>
+</body>
+</html>

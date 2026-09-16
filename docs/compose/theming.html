@@ -1,0 +1,1047 @@
+<!doctype html>
+<!-- Скелет html-страницы проекта. Единственное оформление: палитра совпадает с профилем
+     терминала Warm Light. Копируешь целиком, заменяешь {{...}}, наполняешь <main>,
+     неиспользованные блоки удаляешь. Своих css-правил не дописывать — см. skills/html-page.
+     Блок .copybar и <pre hidden> нужны только там, где страницу копируют в трекер (задачи). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Темы в Compose: механика и восемь кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .diff{font-family:var(--mono);font-size:13.5px;line-height:1.6;background:var(--code);
+        border-radius:8px;padding:10px 0;margin:0 0 16px;overflow-x:auto}
+  .diff div{padding:0 14px 0 8px;white-space:pre}
+  .diff .add{background:#E2F0DA;box-shadow:inset 3px 0 var(--green)}
+  .diff .del{background:#F8E3DA;box-shadow:inset 3px 0 var(--red)}
+  .diff .sign{display:inline-block;width:16px;color:var(--muted);user-select:none;font-weight:700}
+  .diff .add .sign{color:var(--green)}
+  .diff .del .sign{color:var(--red)}
+  .diff mark{background:#BFDDB2;color:var(--green);border-radius:3px;padding:0 2px;font-weight:600}
+  .diff .del mark{background:#EFC7B7;color:var(--red)}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+  .mock .gone{background:var(--red-bg);color:var(--red);border-radius:3px}
+  .mock .came{background:var(--green-bg);color:var(--green);border-radius:3px}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  /* Индексная страница: список ссылок на другие страницы каталога. Кликабельна вся строка,
+     а не только заголовок — по списку ходят мышью, попадать в текст ссылки незачем. */
+  ul.index{list-style:none;margin:0 0 16px;padding:0;border-top:1px solid var(--line)}
+  ul.index li{border-bottom:1px solid var(--line)}
+  ul.index a{display:block;padding:11px 14px;text-decoration:none;color:inherit;
+             border-left:3px solid transparent}
+  ul.index a:hover{background:var(--panel);border-left-color:var(--cyan)}
+  ul.index .top{display:flex;gap:12px;align-items:baseline;margin-bottom:2px;
+                font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  ul.index .id{color:var(--cyan)}
+  ul.index .date{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul.index .name{font-size:16px;color:var(--ink)}
+
+  /* Разбор кейса: задача → как пишут → что видит пользователь → почему → как надо → правило.
+     Для обучающих страниц, где ошибка показывается вместе с последствием. Метка .lbl красит
+     только свою подпись, код под ней — pre.bad / pre.good. */
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}    .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)} .lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}   .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+  /* Имя файла над блоком кода — чтобы было видно, куда этот код кладется */
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px}
+  /* Сценарий глазами пользователя: последний пункт — то, что сломалось */
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+  /* Вывод кейса одной строкой */
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  /* Разделитель крупных частей страницы: «Часть I. Механика», «Часть II. Кейсы» */
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+
+  /* Кнопки «скопировать в трекер». Две разные: заголовок — светлая, описание — заливкой.
+     Метка H1 / MD перед подписью, чтобы не путать на ощупь. */
+  .copybar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;align-items:center}
+  .copybar button{font:inherit;font-size:13.5px;padding:6px 13px;border-radius:7px;cursor:pointer;
+    display:inline-flex;align-items:center;
+    background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+  .copybar button::before{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    padding:2px 5px;border-radius:4px;margin-right:8px;background:var(--code);color:var(--muted)}
+  .copybar button[data-copy="md-title"]::before{content:"H1"}
+  .copybar button[data-copy="md-title"]:hover{border-color:var(--muted)}
+  .copybar button[data-copy="md-body"]{background:var(--cyan-bg);color:var(--cyan);border-color:var(--cyan)}
+  .copybar button[data-copy="md-body"]::before{content:"MD";background:#FFFFFF;color:var(--cyan)}
+  .copybar button[data-copy="md-body"]:hover{background:#D6E8E7}
+  .copybar button:active{transform:translateY(1px)}
+  .copybar button[data-done]{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+  .copybar button[data-done]::before{background:#fff;color:var(--green)}
+  .copybar button:disabled{cursor:default}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Темы в Compose: механика и восемь кейсов</h1>
+    <p class="sub">Первая половина — из чего состоит MaterialTheme, как цвета и шрифты доезжают до компонентов и как собирается своя дизайн-система поверх. Вторая — восемь экранов, где тема ломается: как пишут, что видит пользователь, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Что такое тема</a>
+      <a href="#t2">02 Цветовая схема</a>
+      <a href="#t3">03 Светлая и темная</a>
+      <a href="#t4">04 Типографика</a>
+      <a href="#t5">05 Формы</a>
+      <a href="#t6">06 Как компоненты читают тему</a>
+      <a href="#t7">07 Своя дизайн-система</a>
+      <a href="#t8">08 Превью и тесты</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Хардкод цвета</a>
+      <a href="#c2">2 Непарные цвета</a>
+      <a href="#c3">3 Material You съел бренд</a>
+      <a href="#c4">4 Фиолетовый экран</a>
+      <a href="#c5">5 Чужой слот под свой цвет</a>
+      <a href="#c6">6 Переключатель темы</a>
+      <a href="#c7">7 Размеры шрифта руками</a>
+      <a href="#c8">8 Тени в темной теме</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <div class="chips">
+        <span class="chip b">Material 3</span>
+        <span class="chip">MaterialTheme</span>
+        <span class="chip">CompositionLocal</span>
+      </div>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: как устроена тема</h2>
+        <p>Восемь разделов. К концу будет понятно, что тема — это не набор констант, а три системы,
+        разложенные по дереву композиции, и почему свои токены добавляются не в нее, а рядом.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Что такое тема</h2>
+
+      <p class="prose"><code>MaterialTheme</code> — не стиль и не набор констант. Это функция, которая
+      кладет три объекта в дерево композиции, чтобы любой компонент ниже мог их прочитать, не получая
+      параметром.</p>
+
+<pre><code>@Composable
+fun MaterialTheme(
+    colorScheme: ColorScheme = MaterialTheme.colorScheme,
+    shapes: Shapes = MaterialTheme.shapes,
+    typography: Typography = MaterialTheme.typography,
+    content: @Composable () -&gt; Unit
+) {
+    CompositionLocalProvider(
+        LocalColorScheme provides colorScheme,       // цвета
+        LocalShapes provides shapes,                 // формы
+        LocalTypography provides typography,         // шрифты
+        LocalContentColor provides colorScheme.onSurface,
+        LocalTextSelectionColors provides selectionColors,
+        …
+    ) {
+        ProvideTextStyle(value = typography.bodyLarge, content = content)
+    }
+}</code></pre>
+
+      <pre class="ascii"><code>MaterialTheme
+├─ colorScheme    29 именованных слотов: primary, surface, error и их on-пары
+├─ typography     15 стилей: display / headline / title / body / label × Large, Medium, Small
+└─ shapes          5 форм: extraSmall … extraLarge
+
+читаются в любом месте ниже по дереву:
+    MaterialTheme.colorScheme.primary
+    MaterialTheme.typography.titleMedium
+    MaterialTheme.shapes.medium</code></pre>
+
+      <div class="note">
+        <span class="tag">Material 3 Expressive</span>
+        <p>В свежих версиях material3 рядом с <code>MaterialTheme</code> появился
+        <code>MaterialExpressiveTheme</code> — та же идея, но систем четыре: к цветам, типографике и
+        формам добавлена <code>motionScheme</code>. Она задает пружины анимаций на весь экран: вариант
+        <code>standard</code> — сдержанные переходы, <code>expressive</code> — с заметным
+        перелетом. Плюс расширенная библиотека форм и морфинг между ними.</p>
+      </div>
+
+<pre><code>MaterialExpressiveTheme(
+    colorScheme = AppColorScheme,
+    motionScheme = MotionScheme.expressive(),   // четвертая система: пружины анимаций
+    shapes = AppShapes,
+    typography = AppTypography,
+    content = content
+)</code></pre>
+
+      <p class="why">Отсюда первое следствие: <b>тема действует на поддерево, а не на приложение</b>.
+      Один <code>MaterialTheme</code> внутри другого перекрывает значения только для своего блока — так
+      делают темные шапки на светлом экране. И второе: если composable оказался вне
+      <code>MaterialTheme</code>, он не упадет, а возьмет схему по умолчанию — фиолетовую (кейс 4).</p>
+
+      <h2 id="t2"><span class="num">02</span> Цветовая схема: слоты, а не цвета</h2>
+
+      <p class="prose">В <code>ColorScheme</code> нет «синего» и «серого» — есть роли. Каждая роль
+      отвечает на вопрос «что этим красят», и у большинства есть парный <code>on</code>-цвет: то, чем
+      писать поверх.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Группа</th><th>Слоты</th><th>Чем красят</th></tr>
+        <tr><td>Основная</td><td class="mono">primary, onPrimary, primaryContainer, onPrimaryContainer</td>
+            <td>главные действия: залитая кнопка, активный переключатель, FAB</td></tr>
+        <tr><td>Вторичная</td><td class="mono">secondary…, tertiary…</td>
+            <td>второстепенные акценты, чипы, выделения</td></tr>
+        <tr><td>Поверхности</td>
+            <td class="mono">surface, onSurface, onSurfaceVariant, surfaceContainerLowest … High, Highest</td>
+            <td>фоны экрана, карточек, шторок, панелей</td></tr>
+        <tr><td>Ошибки</td><td class="mono">error, onError, errorContainer, onErrorContainer</td>
+            <td>валидация, деструктивные действия</td></tr>
+        <tr><td>Границы</td><td class="mono">outline, outlineVariant</td>
+            <td>рамки полей, разделители</td></tr>
+        <tr><td>Прочее</td><td class="mono">scrim, inverseSurface, surfaceTint</td>
+            <td>затемнение под диалогом, снекбар, тональная высота</td></tr>
+      </table>
+      </div>
+
+      <p class="prose">Пары — главный механизм читаемости. Функция <code>contentColorFor(color)</code>
+      по цвету фона находит парный цвет содержимого, и именно ее зовет <code>Surface</code>:</p>
+
+<pre><code>contentColorFor(colorScheme.primary)          // → onPrimary
+contentColorFor(colorScheme.errorContainer)   // → onErrorContainer
+contentColorFor(Color(0xFF102A43))            // → Color.Unspecified: пары нет</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Правило пары</span>
+        <p>Фон берется из схемы — цвет текста поверх него берется из парного слота, и обычно его вообще
+        не надо указывать. Смешивать пары нельзя: фон <code>primaryContainer</code> с текстом
+        <code>onSurface</code> может оказаться нечитаемым в одной из тем (кейс 2).</p>
+      </div>
+
+      <p class="prose">Шкала поверхностей в Material 3 заменила ступени высоты: раньше слой поднимали
+      тенью, теперь различают цветом.</p>
+
+      <pre class="ascii"><code>surfaceContainerLowest   ← самый дальний слой: фон под карточками
+surfaceContainerLow
+surfaceContainer         ← обычная карточка
+surfaceContainerHigh     ← карточка внутри карточки, шторка
+surfaceContainerHighest  ← ближайший слой: активная строка, выделение
+
+surfaceDim / surfaceBright   крайние значения фона: темный и светлый край шкалы</code></pre>
+
+      <div class="note">
+        <span class="tag">Важное отличие от тональной высоты</span>
+        <p>Слоты <code>surfaceContainer*</code> — фиксированные цвета схемы, и
+        <code>tonalElevation</code> на них <b>не влияет</b>. Компоненты Material, которые раньше
+        вычисляли фон через <code>Surface</code> плюс тональную высоту, сейчас берут эти роли
+        напрямую. Практический вывод: различать слои нужно слотами, а не подбором высоты (кейс 8).</p>
+      </div>
+
+      <h2 id="t3"><span class="num">03</span> Светлая и темная</h2>
+
+      <p class="prose">Схем всегда две, и переключение — это выбор объекта, а не пересчет цветов.</p>
+
+<pre class="good"><code>private val LightColors = lightColorScheme(
+    primary = Purple40,
+    onPrimary = Color.White,
+    primaryContainer = Purple90,
+    surface = Grey99,
+    onSurface = Grey10,
+    error = Red40
+)
+
+private val DarkColors = darkColorScheme(
+    primary = Purple80,            // в темной теме основной цвет светлее, а не темнее
+    onPrimary = Purple20,
+    primaryContainer = Purple30,
+    surface = Grey10,
+    onSurface = Grey90,
+    error = Red80
+)
+
+@Composable
+fun AppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -&gt; Unit
+) {
+    MaterialTheme(
+        colorScheme = if (darkTheme) DarkColors else LightColors,
+        typography = AppTypography,
+        shapes = AppShapes,
+        content = content
+    )
+}</code></pre>
+
+      <p class="why">Незаданные слоты <code>lightColorScheme</code> и <code>darkColorScheme</code>
+      заполняют базовыми значениями Material — поэтому схема всегда полная, и композиция не падает,
+      если про какой-то слот забыли. Она просто окажется фиолетовой в этом месте.</p>
+
+      <h3>Динамические цвета</h3>
+
+<pre><code>val colorScheme = when {
+    dynamicColor &amp;&amp; Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.S -&gt; {
+        val context = LocalContext.current
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    }
+    darkTheme -&gt; DarkColors
+    else -&gt; LightColors
+}</code></pre>
+
+      <p class="why">Схема строится из обоев пользователя. Это уместно для приложений без сильного
+      бренда — и вредно там, где фирменный цвет часть узнаваемости: включив динамику, ты отдаешь
+      палитру системе (кейс 3).</p>
+
+      <h2 id="t4"><span class="num">04</span> Типографика</h2>
+
+      <p class="prose">Пятнадцать стилей: пять ролей по три размера. Роль выбирается по назначению
+      текста, а не по нужному кеглю.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Роль</th><th>Размеры</th><th>Для чего</th></tr>
+        <tr><td class="mono">display</td><td>Large / Medium / Small</td><td>крупные числа и промо-заголовки, редко</td></tr>
+        <tr><td class="mono">headline</td><td>Large / Medium / Small</td><td>заголовок экрана</td></tr>
+        <tr><td class="mono">title</td><td>Large / Medium / Small</td><td>заголовок блока, строки списка</td></tr>
+        <tr><td class="mono">body</td><td>Large / Medium / Small</td><td>основной текст; <code>bodyLarge</code> — значение по умолчанию</td></tr>
+        <tr><td class="mono">label</td><td>Large / Medium / Small</td><td>подписи кнопок, чипов, полей</td></tr>
+      </table>
+      </div>
+
+<pre class="good"><code>private val Inter = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold)
+)
+
+val AppTypography = Typography(
+    headlineSmall = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,           // именно sp: масштабируется системной настройкой шрифта
+        lineHeight = 26.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.Normal,
+        fontSize = 15.sp,
+        lineHeight = 20.sp
+    ),
+    labelLarge = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+)</code></pre>
+
+      <p class="why">Единицы имеют значение: <code>sp</code> учитывает системную настройку размера
+      шрифта, <code>dp</code> — нет. Текст в <code>dp</code> — это экран, который не читается людьми,
+      увеличившими шрифт в настройках (кейс 7).</p>
+
+      <h2 id="t5"><span class="num">05</span> Формы</h2>
+
+<pre class="good"><code>val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),     // карточки
+    large = RoundedCornerShape(16.dp),      // шторки, крупные блоки
+    extraLarge = RoundedCornerShape(28.dp)  // диалоги
+)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Компонент</th><th>Какую форму берет по умолчанию</th></tr>
+        <tr><td class="mono">Card</td><td class="mono">shapes.medium</td></tr>
+        <tr><td class="mono">Button</td><td>полное скругление, не из <code>Shapes</code></td></tr>
+        <tr><td class="mono">AlertDialog</td><td class="mono">shapes.extraLarge</td></tr>
+        <tr><td class="mono">ModalBottomSheet</td><td class="mono">shapes.extraLarge</td></tr>
+        <tr><td class="mono">TextField</td><td class="mono">shapes.extraSmall</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Кроме пяти базовых форм в M3 Expressive добавилась библиотека готовых фигур —
+      скругленные квадраты, фестоны, звезды — и анимированный морфинг между ними. Это инструмент для
+      акцентных элементов: аватаров, иконок состояния, индикаторов загрузки, — а не для карточек и
+      кнопок, которым по-прежнему хватает <code>Shapes</code>.</p>
+
+      <h2 id="t6"><span class="num">06</span> Как компоненты читают тему</h2>
+
+      <p class="prose">Компонент не берет цвет напрямую из схемы — между ними два слоя, и знание про
+      них объясняет, почему «текст сам правильного цвета».</p>
+
+      <pre class="ascii"><code>MaterialTheme
+   │  colorScheme.surface, onSurface, typography.bodyLarge
+   ▼
+Surface / Button / Card
+   │  contentColorFor(цвет фона) → LocalContentColor
+   │  ProvideTextStyle(нужный стиль)
+   ▼
+Text, Icon
+      читают LocalContentColor и LocalTextStyle, если им ничего не передали</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Слой</th><th>Что делает</th></tr>
+        <tr><td class="mono">MaterialTheme.colorScheme</td><td>хранит палитру ролей</td></tr>
+        <tr><td class="mono">*Defaults</td>
+            <td><code>ButtonDefaults</code>, <code>CardDefaults</code>, <code>TextFieldDefaults</code>:
+            переводят роли в наборы состояний компонента</td></tr>
+        <tr><td class="mono">LocalContentColor</td><td>цвет содержимого текущей поверхности</td></tr>
+        <tr><td class="mono">LocalTextStyle</td><td>стиль текста, действующий по умолчанию</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Практический вывод: у большинства <code>Text</code> и <code>Icon</code> не должно
+      быть ни <code>color</code>, ни <code>style</code>. Указывать их нужно там, где текст сознательно
+      отличается от окружения — например, второстепенная подпись
+      <code>onSurfaceVariant</code>.</p>
+
+      <h2 id="t7"><span class="num">07</span> Своя дизайн-система поверх</h2>
+
+      <p class="prose">Рано или поздно появляются токены, которых в Material нет: отступы, свои
+      семантические цвета (успех, предупреждение, бренд), высоты элементов. Официальная дока описывает
+      три стратегии, и выбирают между ними один раз на проект.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Стратегия</th><th>Что происходит</th><th>Когда</th></tr>
+        <tr><td>Расширить тему</td>
+            <td><code>MaterialTheme</code> остается, рядом свои <code>CompositionLocal</code> с
+            дополнительными токенами</td>
+            <td>дефолт: дизайн-система близка к Material, нужны свои цвета и отступы</td></tr>
+        <tr><td>Заменить часть систем</td>
+            <td>своя типографика или своя палитра, остальное берется из Material</td>
+            <td>фирменные шрифты и цвета при стандартных компонентах</td></tr>
+        <tr><td>Своя тема целиком</td>
+            <td>ни <code>MaterialTheme</code>, ни его компонентов: свои <code>CompositionLocal</code> и
+            своя библиотека</td>
+            <td>дизайн-система принципиально не Material; готовые компоненты все равно придется
+            переписать</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Чего делать не стоит ни в одной из них — <b>выкручивать существующие токены под
+      чужой смысл</b>: класть цвет успеха в <code>tertiary</code>, а отступы в
+      <code>shapes</code>. Нет слота для понятия — значит тему расширяют, а не переосмысляют
+      (кейс 5).</p>
+
+<pre class="good"><code>@Immutable
+data class AppColors(
+    val success: Color,
+    val warning: Color,
+    val brand: Color,
+    val onBrand: Color
+)
+
+@Immutable
+data class AppSpacing(
+    val xs: Dp = 4.dp,
+    val s: Dp = 8.dp,
+    val m: Dp = 16.dp,
+    val l: Dp = 24.dp
+)
+
+val LocalAppColors = staticCompositionLocalOf&lt;AppColors&gt; { error("AppColors not provided") }
+val LocalAppSpacing = staticCompositionLocalOf { AppSpacing() }
+
+@Composable
+fun AppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -&gt; Unit) {
+    val appColors = if (darkTheme) DarkAppColors else LightAppColors
+
+    CompositionLocalProvider(
+        LocalAppColors provides appColors,
+        LocalAppSpacing provides AppSpacing()
+    ) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColors else LightColors,
+            typography = AppTypography,
+            shapes = AppShapes,
+            content = content
+        )
+    }
+}
+
+// короткий доступ: AppTheme.colors.success, AppTheme.spacing.m
+object AppTheme {
+    val colors: AppColors
+        @Composable get() = LocalAppColors.current
+    val spacing: AppSpacing
+        @Composable get() = LocalAppSpacing.current
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Фабрика</th><th>Когда</th></tr>
+        <tr><td class="mono">staticCompositionLocalOf</td>
+            <td>значение меняется редко — тема, отступы. При смене перезапускается все поддерево</td></tr>
+        <tr><td class="mono">compositionLocalOf</td>
+            <td>значение меняется часто. Перезапускаются только те функции, что его читают</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Для темы почти всегда <code>static</code>: смена темы — редкое событие, зато
+      чтение дешевле, потому что рантайм не отслеживает читателей. И обязательный
+      <code>@Immutable</code> на классе токенов: без него Compose считает тип нестабильным и перестает
+      пропускать рекомпозиции у всего, что его принимает.</p>
+
+      <h2 id="t8"><span class="num">08</span> Превью и тесты</h2>
+
+<pre class="good"><code>@Preview(name = "Светлая")
+@Preview(name = "Темная", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Крупный шрифт", fontScale = 2f)
+@Composable
+private fun GiftCardPreview() {
+    AppTheme {                      // превью без темы покажет не тот экран, что увидит пользователь
+        GiftCard(gift = GiftItem.preview())
+    }
+}</code></pre>
+
+      <p class="why">Три превью на один компонент ловят три разных класса ошибок: захардкоженные
+      цвета, нечитаемые пары и верстку, рассыпающуюся при увеличенном шрифте. Дешевле, чем гонять
+      сборку на устройстве.</p>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Восемь кейсов</h2>
+        <p>Задача, код как его пишут, что видит пользователь, объяснение через разделы части I и
+        правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Хардкод цвета</h3>
+        <p class="task">Карточка статуса заказа: серый фон, темный текст — как в макете.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(
+    color = Color(0xFFF5F5F5),
+    shape = RoundedCornerShape(12.dp)
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = order.status, color = Color(0xFF212121))
+        Text(text = order.date, color = Color(0xFF9E9E9E))
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>В светлой теме все как на макете</li>
+          <li class="hit">В темной — светло-серая плашка посреди темного экрана, как дырка</li>
+          <li class="hit">Текст на ней темный, но сама карточка теперь ярче фона приложения</li>
+          <li class="hit">После обновления дизайн-системы серый поменялся везде, кроме этого места</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Значение <code>Color(0xFFF5F5F5)</code> не участвует ни в какой теме: оно одинаково в
+        обеих. Схема — это набор ролей, которые меняются вместе (раздел 02), а литерал из нее
+        выпадает.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(
+    color = MaterialTheme.colorScheme.surfaceContainer,     // роль, а не цвет
+    shape = MaterialTheme.shapes.medium
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = order.status)                            // onSurface придет сам
+        Text(text = order.date, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Литерал <code>Color(0x…)</code> допустим ровно в одном
+        месте — в файле палитры, откуда собираются схемы. В экранном коде его быть не должно.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Пары цветов перепутаны</h3>
+        <p class="task">Блок с предупреждением: фон выделенный, текст поверх него.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(color = MaterialTheme.colorScheme.errorContainer) {
+    Text(
+        text = "Не хватает бонусов",
+        color = MaterialTheme.colorScheme.onSurface,      // цвет из чужой пары
+        modifier = Modifier.padding(16.dp)
+    )
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>В светлой теме текст читается, разница почти незаметна</li>
+          <li class="hit">В темной — темно-серый текст на темно-бордовом фоне, контраст почти нулевой</li>
+          <li class="hit">При включенной в системе повышенной контрастности проблема остается: пара
+          не меняется, потому что она собрана вручную</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Каждому фоновому слоту схемы соответствует свой <code>on</code>-цвет, подобранный по
+        контрасту (раздел 02). <code>onSurface</code> рассчитан на <code>surface</code>, а не на
+        <code>errorContainer</code>.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(color = MaterialTheme.colorScheme.errorContainer) {
+    Text(text = "Не хватает бонусов", modifier = Modifier.padding(16.dp))
+}   // Surface сам подставит onErrorContainer через contentColorFor</code></pre>
+
+        <div class="rule"><b>Правило</b>Взял фон из схемы — не указывай цвет текста вообще. Нужен
+        оттенок потише — бери <code>onSurfaceVariant</code> только на поверхностях группы
+        surface.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Material You съел фирменный цвет</h3>
+        <p class="task">Включили динамические цвета — «так современнее и как в системных
+        приложениях».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun AppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,                  // включено по умолчанию
+    content: @Composable () -&gt; Unit
+) {
+    val colorScheme = when {
+        dynamicColor &amp;&amp; Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.S -&gt; {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -&gt; DarkColors
+        else -&gt; LightColors
+    }
+    MaterialTheme(colorScheme = colorScheme, content = content)
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>У пользователя с зелеными обоями приложение зеленое</li>
+          <li class="hit">Фирменный фиолетовый исчез: кнопки, ссылки, активные вкладки — все чужого
+          цвета</li>
+          <li class="hit">Скриншоты в поддержке не совпадают с тем, что видит оператор</li>
+          <li class="hit">Маркетинг приносит макеты с брендом, а воспроизвести их нельзя</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Динамическая схема строится из обоев и заменяет палитру целиком, включая
+        <code>primary</code>. Для приложения без сильного бренда это плюс, для брендового —
+        потеря узнаваемости.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// вариант 1: бренд важнее — динамику не включаем
+MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, content = content)
+
+// вариант 2: динамика как настройка пользователя, по умолчанию выключена
+@Composable
+fun AppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = false,                 // осознанный выбор, а не дефолт шаблона
+    content: @Composable () -&gt; Unit
+) { … }</code></pre>
+
+        <div class="rule"><b>Правило</b>Динамические цвета — продуктовое решение, а не техническая
+        деталь. Шаблон Android Studio включает их по умолчанию: это надо заметить и решить
+        осознанно.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Экран внезапно фиолетовый</h3>
+        <p class="task">Новый блок показывается в диалоге, который открывается из XML-экрана через
+        <code>ComposeView</code>.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>composeView.setContent {
+    PromoBanner(promo = promo)        // темы нет
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Основные экраны выглядят правильно</li>
+          <li class="hit">Один блок нарисован фиолетовым: кнопка, ссылки и акценты не из палитры
+          приложения</li>
+          <li class="hit">Шрифт тоже чужой: заголовок крупнее, чем везде</li>
+          <li class="hit">В темной теме блок остается светлым</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Тема действует на поддерево композиции (раздел 01). Каждая точка входа — свой
+        <code>setContent</code>, диалог, <code>ComposeView</code> в списке — начинает новое дерево, и
+        если тему туда не положили, берется схема Material по умолчанию. Она фиолетовая, и это самый
+        узнаваемый симптом.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>composeView.setContent {
+    AppTheme {                        // тема в каждой точке входа
+        PromoBanner(promo = promo)
+    }
+}</code></pre>
+        <p>Чтобы не забывать, точку входа заворачивают один раз в свою функцию:</p>
+<pre class="good"><code>fun ComposeView.setThemedContent(content: @Composable () -&gt; Unit) {
+    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+    setContent { AppTheme(content = content) }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Фиолетовый на экране — почти всегда «композиция без темы», а
+        не ошибка палитры.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Свой цвет положили в чужой слот</h3>
+        <p class="task">Нужен зеленый цвет успеха: галочка, статус «оплачено», подтверждение.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>private val LightColors = lightColorScheme(
+    primary = BrandPurple,
+    tertiary = SuccessGreen        // «свободный слот, пусть будет успехом»
+)
+
+// на экране
+Icon(imageVector = Icons.Default.Check, tint = MaterialTheme.colorScheme.tertiary)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Галочка зеленая, все работает</li>
+          <li class="hit">Через месяц <code>FilterChip</code> в другом месте тоже стал зеленым:
+          компоненты Material сами берут <code>tertiary</code> для акцентов</li>
+          <li class="hit">Дизайнер просит сделать акцент чипов синим — и ломает этим все статусы
+          «оплачено»</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Слоты схемы — это роли с назначением, а не свободные ячейки. <code>tertiary</code>
+        используют готовые компоненты, и его смысл нельзя переопределить локально.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Immutable
+data class AppColors(val success: Color, val onSuccess: Color, val warning: Color)
+
+val LocalAppColors = staticCompositionLocalOf&lt;AppColors&gt; { error("AppColors not provided") }
+
+@Composable
+fun AppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -&gt; Unit) {
+    CompositionLocalProvider(LocalAppColors provides if (darkTheme) DarkAppColors else LightAppColors) {
+        MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, content = content)
+    }
+}
+
+// на экране
+Icon(imageVector = Icons.Default.Check, tint = AppTheme.colors.success)</code></pre>
+
+        <div class="rule"><b>Правило</b>Нет слота для понятия — тему расширяют своим
+        <code>CompositionLocal</code>, а не переосмысляют существующую роль.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Переключатель темы в настройках не работает</h3>
+        <p class="task">В приложении три варианта: светлая, темная, как в системе.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>// где-то в настройках
+prefs.themeMode = ThemeMode.DARK        // записали и все
+
+// в Activity
+setContent {
+    AppTheme(darkTheme = prefs.themeMode == ThemeMode.DARK) {
+        AppNavHost()
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Выбрал темную тему в настройках</li>
+          <li class="hit">Ничего не изменилось, пока приложение не перезапустишь</li>
+          <li class="hit">После перезапуска тема применилась — пользователь думает, что так и
+          задумано</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>prefs.themeMode</code> — обычное значение, а не состояние: Compose не знает, что оно
+        изменилось, и перечитывать его некому. Тема обязана приходить из наблюдаемого источника.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// репозиторий настроек отдает поток
+val themeMode: StateFlow&lt;ThemeMode&gt; = settingsRepository.themeMode
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.SYSTEM)
+
+// Activity
+setContent {
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -&gt; false
+        ThemeMode.DARK -&gt; true
+        ThemeMode.SYSTEM -&gt; isSystemInDarkTheme()
+    }
+
+    AppTheme(darkTheme = darkTheme) {
+        AppNavHost()
+    }
+}</code></pre>
+
+        <div class="note">
+          <span class="tag">Побочный эффект</span>
+          <p>Смена темы перезапускает все поддерево — она объявлена через
+          <code>staticCompositionLocalOf</code> (раздел 07). Это нормально: событие редкое. Но именно
+          поэтому в тему не кладут часто меняющиеся значения.</p>
+        </div>
+
+        <div class="rule"><b>Правило</b>Тема — это состояние приложения. Читается из потока, а не из
+        <code>prefs</code> напрямую.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Размеры шрифта заданы руками</h3>
+        <p class="task">По макету заголовок 20, подпись 13 — проставили как есть.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Text(text = gift.title, fontSize = 20.dp.value.sp, fontWeight = FontWeight.Bold)
+Text(text = gift.subtitle, fontSize = 13.sp, color = Color.Gray)
+Text(text = gift.price, style = TextStyle(fontSize = 15.sp))</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>На стандартных настройках верстка совпадает с макетом</li>
+          <li class="hit">У пользователя с увеличенным системным шрифтом часть текста осталась
+          мелкой — там, где размер пришел в <code>dp</code></li>
+          <li class="hit">Заголовки в разных экранах отличаются на пару пунктов: числа проставляли
+          по разным макетам</li>
+          <li class="hit">Смена шрифта дизайн-системы требует правки сотни мест</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Типографика — такая же система, как палитра (раздел 04). Числа в экранном коде выпадают из
+        нее ровно так же, как литералы цвета. Отдельно про единицы: <code>sp</code> масштабируется
+        системной настройкой, <code>dp</code> — нет.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Text(text = gift.title, style = MaterialTheme.typography.headlineSmall)
+Text(
+    text = gift.subtitle,
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant
+)
+Text(text = gift.price, style = MaterialTheme.typography.titleMedium)</code></pre>
+        <p>Проверяется превью с <code>fontScale = 2f</code> (раздел 08): на нем сразу видно и
+        незамасштабированный текст, и блоки, которые от увеличения разваливаются.</p>
+
+        <div class="rule"><b>Правило</b>Размер и начертание берутся из <code>typography</code>. В
+        экранном коде остаются только <code>color</code> и <code>maxLines</code>.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. В темной теме карточки слились с фоном</h3>
+        <p class="task">Список карточек, каждая отделена тенью — как в Material 2.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Card(
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)   // отделяем тенью
+) { … }</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>В светлой теме карточки видно: тень дает границу</li>
+          <li class="hit">В темной карточки сливаются с фоном в сплошное полотно — тень на темном не
+          читается</li>
+          <li class="hit">Границы блоков приходится угадывать по отступам между текстом</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Тень — прием светлой темы: она работает, когда есть что затемнять. В Material 3 слои
+        различают <b>цветом</b>: шкала <code>surfaceContainer*</code> (раздел 02) для того и сделана.
+        Эти слоты не зависят от <code>tonalElevation</code> — они просто разные цвета в схеме, и в
+        темной теме разница между ними видна.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Card(
+    colors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer   // слой задан цветом
+    ),
+    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+) { … }
+
+// карточка внутри карточки — следующая ступень шкалы
+Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) { … }</code></pre>
+
+        <div class="rule"><b>Правило</b>Слои различают слотами шкалы поверхностей. Тень остается для
+        того, что действительно висит над контентом: FAB, шторка, диалог.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видит пользователь</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Светлая плашка в темной теме</td><td>литерал цвета вместо роли схемы</td><td class="num">1</td></tr>
+        <tr><td>Текст почти не читается на цветном фоне</td><td>смешаны пары фон / on-цвет</td><td class="num">2</td></tr>
+        <tr><td>Приложение в цвете обоев, бренда нет</td><td>включены динамические цвета</td><td class="num">3</td></tr>
+        <tr><td>Один блок фиолетовый и с чужим шрифтом</td><td>композиция без темы</td><td class="num">4</td></tr>
+        <tr><td>Чужой элемент перекрасился заодно</td><td>свой смысл вложен в слот Material</td><td class="num">5</td></tr>
+        <tr><td>Тема меняется только после перезапуска</td><td>тема читается не из состояния</td><td class="num">6</td></tr>
+        <tr><td>Текст не увеличивается вместе с системным шрифтом</td><td>размеры руками, местами в dp</td><td class="num">7</td></tr>
+        <tr><td>Карточки слились с фоном в темной теме</td><td>слои отделены тенью, а не цветом</td><td class="num">8</td></tr>
+      </table>
+      </div>
+
+      <h3>Чеклист ревью</h3>
+
+      <ol class="steps">
+        <li>В экранном коде нет <code>Color(0x…)</code>, <code>fontSize</code>, литеральных радиусов.</li>
+        <li>Фон взят из схемы — цвет текста не указан вовсе.</li>
+        <li>Каждая точка входа в композицию завернута в тему.</li>
+        <li>Свои токены живут в собственном <code>CompositionLocal</code>, а не в слотах Material.</li>
+        <li>Класс своих токенов помечен <code>@Immutable</code>.</li>
+        <li>Тема приходит из наблюдаемого состояния, а не из <code>prefs</code>.</li>
+        <li>Слои отделены слотами <code>surfaceContainer*</code>, тень — только для плавающего.</li>
+        <li>У компонента есть превью в трех вариантах: светлая, темная, <code>fontScale = 2f</code>.</li>
+      </ol>
+
+      <div class="note ok">
+        <span class="tag">Итог</span>
+        <p>Тема — это не набор констант, а три системы (в Expressive — четыре), разложенные по дереву
+        композиции. Компонент не знает своих цветов: он знает роли и читает их из ближайшей темы.
+        Поэтому все ошибки этой темы одинаковы по форме — значение, которое выпало из системы:
+        литерал цвета, число кегля, чужая пара, композиция без темы.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    11.09.2026 · Соседние статьи: <a href="surface.html">Surface</a> ·
+    <a href="buttons.html">кнопки</a> · <a href="text-fields.html">поля ввода</a> ·
+    Источники:
+    <a href="https://developer.android.com/develop/ui/compose/designsystems/material3">Material Design 3 in Compose</a> ·
+    <a href="https://developer.android.com/develop/ui/compose/designsystems/custom">Custom design systems</a> ·
+    <a href="https://developer.android.com/codelabs/jetpack-compose-theming">Theming codelab</a> ·
+    <a href="https://developer.android.com/jetpack/androidx/releases/compose-material3">Compose Material 3 release notes</a>
+  </footer>
+</div>
+</body>
+</html>

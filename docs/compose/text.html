@@ -1,0 +1,991 @@
+<!doctype html>
+<!-- Скелет html-страницы проекта. Единственное оформление: палитра совпадает с профилем
+     терминала Warm Light. Копируешь целиком, заменяешь {{...}}, наполняешь <main>,
+     неиспользованные блоки удаляешь. Своих css-правил не дописывать — см. skills/html-page.
+     Блок .copybar и <pre hidden> нужны только там, где страницу копируют в трекер (задачи). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Text: механика и восемь кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .diff{font-family:var(--mono);font-size:13.5px;line-height:1.6;background:var(--code);
+        border-radius:8px;padding:10px 0;margin:0 0 16px;overflow-x:auto}
+  .diff div{padding:0 14px 0 8px;white-space:pre}
+  .diff .add{background:#E2F0DA;box-shadow:inset 3px 0 var(--green)}
+  .diff .del{background:#F8E3DA;box-shadow:inset 3px 0 var(--red)}
+  .diff .sign{display:inline-block;width:16px;color:var(--muted);user-select:none;font-weight:700}
+  .diff .add .sign{color:var(--green)}
+  .diff .del .sign{color:var(--red)}
+  .diff mark{background:#BFDDB2;color:var(--green);border-radius:3px;padding:0 2px;font-weight:600}
+  .diff .del mark{background:#EFC7B7;color:var(--red)}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+  .mock .gone{background:var(--red-bg);color:var(--red);border-radius:3px}
+  .mock .came{background:var(--green-bg);color:var(--green);border-radius:3px}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  /* Индексная страница: список ссылок на другие страницы каталога. Кликабельна вся строка,
+     а не только заголовок — по списку ходят мышью, попадать в текст ссылки незачем. */
+  ul.index{list-style:none;margin:0 0 16px;padding:0;border-top:1px solid var(--line)}
+  ul.index li{border-bottom:1px solid var(--line)}
+  ul.index a{display:block;padding:11px 14px;text-decoration:none;color:inherit;
+             border-left:3px solid transparent}
+  ul.index a:hover{background:var(--panel);border-left-color:var(--cyan)}
+  ul.index .top{display:flex;gap:12px;align-items:baseline;margin-bottom:2px;
+                font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  ul.index .id{color:var(--cyan)}
+  ul.index .date{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul.index .name{font-size:16px;color:var(--ink)}
+
+  /* Разбор кейса: задача → как пишут → что видит пользователь → почему → как надо → правило.
+     Для обучающих страниц, где ошибка показывается вместе с последствием. Метка .lbl красит
+     только свою подпись, код под ней — pre.bad / pre.good. */
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}    .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)} .lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}   .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+  /* Имя файла над блоком кода — чтобы было видно, куда этот код кладется */
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px}
+  /* Сценарий глазами пользователя: последний пункт — то, что сломалось */
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+  /* Вывод кейса одной строкой */
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  /* Разделитель крупных частей страницы: «Часть I. Механика», «Часть II. Кейсы» */
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+
+  /* Кнопки «скопировать в трекер». Две разные: заголовок — светлая, описание — заливкой.
+     Метка H1 / MD перед подписью, чтобы не путать на ощупь. */
+  .copybar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;align-items:center}
+  .copybar button{font:inherit;font-size:13.5px;padding:6px 13px;border-radius:7px;cursor:pointer;
+    display:inline-flex;align-items:center;
+    background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+  .copybar button::before{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    padding:2px 5px;border-radius:4px;margin-right:8px;background:var(--code);color:var(--muted)}
+  .copybar button[data-copy="md-title"]::before{content:"H1"}
+  .copybar button[data-copy="md-title"]:hover{border-color:var(--muted)}
+  .copybar button[data-copy="md-body"]{background:var(--cyan-bg);color:var(--cyan);border-color:var(--cyan)}
+  .copybar button[data-copy="md-body"]::before{content:"MD";background:#FFFFFF;color:var(--cyan)}
+  .copybar button[data-copy="md-body"]:hover{background:#D6E8E7}
+  .copybar button:active{transform:translateY(1px)}
+  .copybar button[data-done]{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+  .copybar button[data-done]::before{background:#fff;color:var(--green)}
+  .copybar button:disabled{cursor:default}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Text: механика и восемь кейсов</h1>
+    <p class="sub">Первая половина — чем Text отличается от BasicText, откуда берется стиль, как устроены перенос, обрезка и вертикальная метрика. Вторая — восемь экранов, где текст ломается: как пишут, что видно, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Text и BasicText</a>
+      <a href="#t2">02 Откуда берется стиль</a>
+      <a href="#t3">03 AnnotatedString</a>
+      <a href="#t4">04 Перенос и обрезка</a>
+      <a href="#t5">05 Вертикальная метрика</a>
+      <a href="#t6">06 Измерение текста</a>
+      <a href="#t7">07 Выделение и доступность</a>
+      <a href="#t8">08 Строки и локализация</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Обрезано без троеточия</a>
+      <a href="#c2">2 Не совпало с макетом</a>
+      <a href="#c3">3 Ссылка в тексте</a>
+      <a href="#c4">4 Склеенные строки</a>
+      <a href="#c5">5 Показать еще</a>
+      <a href="#c6">6 Подгон размера</a>
+      <a href="#c7">7 Счетчик тормозит</a>
+      <a href="#c8">8 Нельзя скопировать</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <div class="chips">
+        <span class="chip b">Material 3</span>
+        <span class="chip">androidx.compose.material3.Text</span>
+        <span class="chip">AnnotatedString</span>
+      </div>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: как устроен текст</h2>
+        <p>Восемь разделов. К концу будет понятно, откуда <code>Text</code> берет цвет и размер, что
+        происходит со строкой, которая не влезла, и почему верстка расходится с макетом на пару
+        пикселей.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Text и BasicText</h2>
+
+      <p class="prose">В Compose два компонента текста, и разница между ними ровно в одном: знании о
+      теме.</p>
+
+<pre><code>// material3
+@Composable
+fun Text(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    style: TextStyle = LocalTextStyle.current,     // ← стиль из темы
+    …
+) {
+    val textColor = color.takeOrElse {
+        style.color.takeOrElse { LocalContentColor.current }    // ← цвет из окружения
+    }
+    BasicText(text = text, style = style.merge(color = textColor), …)
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th></th><th class="mono">Text</th><th class="mono">BasicText</th></tr>
+        <tr><td>Пакет</td><td>material3</td><td>foundation</td></tr>
+        <tr><td>Цвет по умолчанию</td><td><code>LocalContentColor</code></td><td>черный, если не задать</td></tr>
+        <tr><td>Стиль по умолчанию</td><td><code>LocalTextStyle</code> из темы</td><td><code>TextStyle.Default</code></td></tr>
+        <tr><td><code>autoSize</code></td><td>нет</td><td>есть</td></tr>
+        <tr><td>Когда брать</td><td>всегда в приложении с темой</td><td>своя дизайн-система, автоподгон размера</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t2"><span class="num">02</span> Откуда берется стиль</h2>
+
+      <p class="prose">У одного <code>Text</code> четыре источника оформления, и они складываются в
+      строгом порядке — от самого приоритетного к самому общему.</p>
+
+      <pre class="ascii"><code>1. параметр напрямую        Text(text = …, color = Color.Red, fontWeight = Bold)
+2. параметр style           Text(text = …, style = MaterialTheme.typography.titleMedium)
+3. LocalTextStyle           то, что положил ProvideTextStyle: кнопка, элемент списка
+4. тема                     MaterialTheme.typography.bodyLarge — значение по умолчанию
+
+цвет отдельно: color → style.color → LocalContentColor</code></pre>
+
+      <p class="why">Практический вывод: отдельные параметры (<code>fontSize</code>,
+      <code>fontWeight</code>, <code>color</code>) <b>перебивают</b> стиль, и это способ сломать
+      типографику незаметно. Правильный порядок мышления — сначала выбрать роль из
+      <code>typography</code>, и только если нужно отличие в одном свойстве, дописать его
+      параметром.</p>
+
+<pre class="good"><code>// роль целиком
+Text(text = gift.title, style = MaterialTheme.typography.titleMedium)
+
+// роль плюс осознанное отличие
+Text(
+    text = gift.price,
+    style = MaterialTheme.typography.titleMedium,
+    color = MaterialTheme.colorScheme.primary
+)
+
+// то же, но через copy — когда отличий несколько
+Text(
+    text = gift.badge,
+    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.5.sp)
+)</code></pre>
+
+      <h2 id="t3"><span class="num">03</span> AnnotatedString: разный стиль внутри одной строки</h2>
+
+      <p class="prose">Когда в одной фразе нужен кусок другого цвета, жирный фрагмент или ссылка,
+      строка собирается через <code>buildAnnotatedString</code>.</p>
+
+<pre class="good"><code>val text = buildAnnotatedString {
+    append("Начислим ")
+    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)) {
+        append("120 бонусов")
+    }
+    append(" после первой покупки")
+}
+
+Text(text = text, style = MaterialTheme.typography.bodyMedium)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Инструмент</th><th>На что действует</th><th>Что задает</th></tr>
+        <tr><td class="mono">SpanStyle</td><td>кусок текста</td>
+            <td>цвет, размер, начертание, подчеркивание, фон</td></tr>
+        <tr><td class="mono">ParagraphStyle</td><td>абзац целиком</td>
+            <td>выравнивание, отступы, межстрочный интервал, направление</td></tr>
+        <tr><td class="mono">withLink(LinkAnnotation…)</td><td>кликабельный кусок</td>
+            <td>ссылка или обработчик нажатия</td></tr>
+      </table>
+      </div>
+
+      <h3>Ссылки внутри текста</h3>
+
+      <p class="prose">Раньше для этого брали <code>ClickableText</code> с ручным поиском аннотации по
+      смещению. Сейчас есть <code>withLink</code>: обработка нажатия, подсветка и доступность
+      встроены.</p>
+
+<pre class="good"><code>val text = buildAnnotatedString {
+    append("Нажимая кнопку, вы соглашаетесь с ")
+    withLink(
+        LinkAnnotation.Url(
+            url = "https://example.com/terms",
+            styles = TextLinkStyles(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline
+                )
+            )
+        )
+    ) {
+        append("условиями")
+    }
+}
+
+Text(text = text)</code></pre>
+
+      <p class="why">Второй вариант — <code>LinkAnnotation.Clickable</code>, когда по нажатию нужен не
+      переход в браузер, а свое действие: открыть экран, показать шторку.</p>
+
+      <h2 id="t4"><span class="num">04</span> Перенос и обрезка</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Параметр</th><th>Что делает</th></tr>
+        <tr><td class="mono">maxLines</td><td>сколько строк максимум; лишнее обрабатывается по <code>overflow</code></td></tr>
+        <tr><td class="mono">minLines</td><td>сколько строк занять всегда — чтобы карточки в списке не прыгали по высоте</td></tr>
+        <tr><td class="mono">softWrap</td><td><code>false</code> — переносов нет вообще, строка одна</td></tr>
+        <tr><td class="mono">overflow</td><td>что делать с тем, что не влезло</td></tr>
+      </table>
+      </div>
+
+      <div class="scroll">
+      <table>
+        <tr><th>TextOverflow</th><th>Результат</th><th>Когда</th></tr>
+        <tr><td class="mono">Clip</td><td>обрезано по краю, без знака</td><td>значение по умолчанию — почти никогда не то, что нужно</td></tr>
+        <tr><td class="mono">Ellipsis</td><td>многоточие в конце</td><td>заголовки, названия, описания</td></tr>
+        <tr><td class="mono">StartEllipsis</td><td>многоточие в начале</td><td>важен хвост: номер счета, конец пути</td></tr>
+        <tr><td class="mono">MiddleEllipsis</td><td>многоточие в середине</td><td>важны оба края: имя файла с расширением</td></tr>
+        <tr><td class="mono">Visible</td><td>рисуется поверх границ</td><td>редко, для эффектов</td></tr>
+      </table>
+      </div>
+
+      <pre class="ascii"><code>Clip            Сертификат на маникюр и педи
+Ellipsis        Сертификат на маникюр и…
+StartEllipsis   …кюр и педикюр в салоне
+MiddleEllipsis  Сертификат н…юр в салоне</code></pre>
+
+      <h3>Автоподгон размера</h3>
+
+<pre class="good"><code>BasicText(
+    text = balance,
+    style = MaterialTheme.typography.displaySmall,
+    maxLines = 1,
+    autoSize = TextAutoSize.StepBased(
+        minFontSize = 16.sp,
+        maxFontSize = 36.sp
+    )
+)</code></pre>
+
+      <p class="why">Компонент подбирает наибольший размер, при котором текст влезает в отведенное
+      место. Параметр есть у <code>BasicText</code>; в <code>Text</code> из material3 его нет —
+      поэтому для таких мест берется <code>BasicText</code> со стилем из темы, переданным явно.</p>
+
+      <h2 id="t5"><span class="num">05</span> Вертикальная метрика: почему не совпадает с макетом</h2>
+
+      <p class="prose">Самая частая претензия дизайнера — «сверху лишние пиксели». Причина в том, что
+      у шрифта есть собственные поля, а у строки — межстрочный интервал, и по умолчанию они
+      распределяются не так, как в Figma.</p>
+
+      <pre class="ascii"><code>┌──────────────────────────┐ ← верх блока текста
+│   поле шрифта            │   includeFontPadding: с BOM 2024.01.01 отключено
+├──────────────────────────┤
+│   Заголовок              │   сама строка
+├──────────────────────────┤
+│   половина lineHeight    │   Trim решает, обрезать ли ее у первой и последней строки
+└──────────────────────────┘</code></pre>
+
+<pre class="good"><code>val AppTypography = Typography(
+    titleMedium = TextStyle(
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        lineHeightStyle = LineHeightStyle(
+            alignment = LineHeightStyle.Alignment.Center,   // строка по центру своего интервала
+            trim = LineHeightStyle.Trim.Both                // лишнее у первой и последней строки убрано
+        )
+    )
+)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Настройка</th><th>Что делает</th></tr>
+        <tr><td class="mono">includeFontPadding</td>
+            <td>Наследие View: добавляет поля по метрикам шрифта сверху и снизу. Сейчас по умолчанию
+            <code>false</code> — именно поэтому верстка стала ближе к макетам</td></tr>
+        <tr><td class="mono">lineHeight</td><td>высота строки; в макетах задается всегда</td></tr>
+        <tr><td class="mono">LineHeightStyle.Trim</td>
+            <td>обрезать ли половину интервала у первой и последней строки — работает только при
+            выключенном <code>includeFontPadding</code></td></tr>
+        <tr><td class="mono">LineHeightStyle.Alignment</td><td>как разместить строку внутри ее интервала</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Настраивается это один раз в <code>Typography</code> темы, а не на отдельных
+      <code>Text</code>. Если расхождение с макетом системное — почти всегда дело здесь (кейс 2).</p>
+
+      <h2 id="t6"><span class="num">06</span> Измерение текста</h2>
+
+      <p class="prose">Иногда нужно знать результат верстки: влез ли текст, сколько получилось строк,
+      где заканчивается третья. Для этого есть колбэк и отдельный измеритель.</p>
+
+<pre class="good"><code>var isOverflowing by remember { mutableStateOf(false) }
+
+Text(
+    text = description,
+    maxLines = 3,
+    overflow = TextOverflow.Ellipsis,
+    onTextLayout = { result -&gt;
+        isOverflowing = result.hasVisualOverflow        // текст не поместился целиком
+    }
+)
+
+if (isOverflowing) {
+    TextButton(onClick = onExpand) { Text(text = "Показать полностью") }
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Инструмент</th><th>Когда</th></tr>
+        <tr><td class="mono">onTextLayout</td><td>реакция на факт верстки: переполнение, число строк, позиции</td></tr>
+        <tr><td class="mono">TextLayoutResult</td>
+            <td><code>hasVisualOverflow</code>, <code>lineCount</code>, <code>getLineEnd(i)</code>,
+            <code>size</code></td></tr>
+        <tr><td class="mono">rememberTextMeasurer</td>
+            <td>измерить текст до отрисовки — например, чтобы нарисовать его в <code>Canvas</code></td></tr>
+      </table>
+      </div>
+
+      <h2 id="t7"><span class="num">07</span> Выделение и доступность</h2>
+
+      <p class="prose">Текст в Compose по умолчанию <b>нельзя выделить</b> — в отличие от
+      <code>TextView</code> с <code>textIsSelectable</code>. Разрешение дает контейнер.</p>
+
+<pre class="good"><code>SelectionContainer {
+    Column {
+        Text(text = "Номер заказа: ${order.number}")
+        Text(text = order.address)
+    }
+}
+
+// исключить кусок из выделения
+SelectionContainer {
+    Column {
+        Text(text = order.address)
+        DisableSelection {
+            Text(text = "Служебная информация")
+        }
+    }
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Задача</th><th>Как</th></tr>
+        <tr><td>Дать скопировать текст</td><td><code>SelectionContainer</code> вокруг блока</td></tr>
+        <tr><td>Скрыть декоративный текст от скринридера</td>
+            <td><code>Modifier.clearAndSetSemantics { }</code></td></tr>
+        <tr><td>Прочитать вслух иначе, чем написано</td>
+            <td><code>Modifier.semantics { contentDescription = "12 июля" }</code> для «12.07»</td></tr>
+        <tr><td>Пометить заголовок для навигации</td><td><code>Modifier.semantics { heading() }</code></td></tr>
+      </table>
+      </div>
+
+      <h2 id="t8"><span class="num">08</span> Строки и локализация</h2>
+
+<pre class="good"><code>Text(text = stringResource(R.string.gift_title))
+
+Text(text = stringResource(R.string.gift_expires_at, date))          // с подстановкой
+
+Text(                                                                 // со склонением
+    text = pluralStringResource(R.plurals.services_count, count, count)
+)</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Чего нельзя делать со строками</span>
+        <p>Склеивать фразу из кусков: <code>stringResource(R.string.left) + " " + count + " " +
+        stringResource(R.string.days)</code>. В другом языке порядок слов другой, склонение зависит от
+        числа, а переводчик видит обрывки без контекста. Вся фраза — один ресурс с плейсхолдерами,
+        счетные фразы — <code>plurals</code> (кейс 4).</p>
+      </div>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Восемь кейсов</h2>
+        <p>Задача, код как его пишут, что видно на экране, объяснение через разделы части I и
+        правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Название обрезано на полуслове</h3>
+        <p class="task">Строка списка сертификатов: название в одну строку, справа сумма.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Row(verticalAlignment = Alignment.CenterVertically) {
+    Text(
+        text = certificate.title,
+        maxLines = 1,                       // overflow не задан
+        modifier = Modifier.weight(1f)
+    )
+    Text(text = certificate.amount)
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Короткие названия выглядят правильно</li>
+          <li class="hit">Длинное обрывается по краю без многоточия: «Сертификат на маник»</li>
+          <li class="hit">Непонятно, обрезано это или так и называется</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Значение <code>overflow</code> по умолчанию — <code>TextOverflow.Clip</code>: обрезать без
+        знака (раздел 04). Многоточие надо просить явно.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Text(
+    text = certificate.title,
+    maxLines = 1,
+    overflow = TextOverflow.Ellipsis,
+    modifier = Modifier.weight(1f)
+)</code></pre>
+        <p>Если важен конец строки, а не начало — есть варианты, о которых обычно не знают:</p>
+<pre class="good"><code>Text(text = order.number, maxLines = 1, overflow = TextOverflow.StartEllipsis)   // …4512
+Text(text = fileName, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)      // отчет…2026.pdf</code></pre>
+
+        <div class="rule"><b>Правило</b><code>maxLines</code> без <code>overflow</code> — всегда
+        ошибка: они ставятся парой.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Текст не совпадает с макетом по вертикали</h3>
+        <p class="task">Карточка: заголовок и подпись под ним, отступы по макету.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Column(modifier = Modifier.padding(16.dp)) {
+    Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+    Spacer(modifier = Modifier.height(2.dp))     // подгоняем на глаз
+    Text(text = subtitle, fontSize = 13.sp)
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Дизайнер накладывает макет и показывает расхождение в 3-4 пикселя сверху</li>
+          <li class="hit">Расстояние между заголовком и подписью не то, что в макете, хотя
+          <code>Spacer</code> подобран</li>
+          <li class="hit">На других экранах то же расхождение, но другой величины — подгоняли
+          отдельно</li>
+          <li class="hit">После смены шрифта дизайн-системы все подгонки поехали</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>У строки есть межстрочный интервал, и по умолчанию его половина остается сверху и снизу
+        блока (раздел 05). Макет в Figma рисуется иначе, поэтому визуальные края не совпадают.
+        Подгонка <code>Spacer</code> лечит симптом на одном экране и ломается на следующем.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// один раз в теме
+val AppTypography = Typography(
+    titleMedium = TextStyle(
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        fontWeight = FontWeight.SemiBold,
+        lineHeightStyle = LineHeightStyle(
+            alignment = LineHeightStyle.Alignment.Center,
+            trim = LineHeightStyle.Trim.Both        // визуальный край совпадает с макетом
+        )
+    ),
+    bodySmall = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, lineHeightStyle = …)
+)
+
+// на экране остается только роль
+Column(modifier = Modifier.padding(16.dp)) {
+    Text(text = title, style = MaterialTheme.typography.titleMedium)
+    Text(text = subtitle, style = MaterialTheme.typography.bodySmall)
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Системное расхождение с макетом лечится в
+        <code>Typography</code>, а не <code>Spacer</code>-ами на экранах.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Ссылка внутри текста</h3>
+        <p class="task">Под кнопкой регистрации: «Нажимая кнопку, вы соглашаетесь с условиями» —
+        последнее слово открывает документ.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Row {
+    Text(text = "Нажимая кнопку, вы соглашаетесь с ")
+    Text(
+        text = "условиями",
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.clickable { onTermsClick() }
+    )
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>На широком экране выглядит правильно</li>
+          <li class="hit">На узком «условиями» уезжает за границу: <code>Row</code> не переносит
+          строки</li>
+          <li class="hit">Область нажатия ровно по буквам, попасть сложно</li>
+          <li class="hit">Скринридер читает две отдельные фразы и не сообщает про ссылку</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Это одна фраза, а не два текста. Разбив ее на composable, теряешь перенос по словам, а
+        нажатие приходится приделывать модификатором — со всеми его ограничениями (раздел 03).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val text = buildAnnotatedString {
+    append(stringResource(R.string.auth_terms_prefix))
+    withLink(
+        LinkAnnotation.Clickable(
+            tag = "terms",
+            styles = TextLinkStyles(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline
+                )
+            ),
+            linkInteractionListener = { onTermsClick() }
+        )
+    ) {
+        append(stringResource(R.string.auth_terms_link))
+    }
+}
+
+Text(text = text, style = MaterialTheme.typography.bodySmall)</code></pre>
+        <p>Перенос работает как у обычного текста, нажатие обрабатывает сам компонент, скринридер
+        сообщает про ссылку. Для внешнего адреса вместо <code>Clickable</code> —
+        <code>LinkAnnotation.Url</code>.</p>
+
+        <div class="rule"><b>Правило</b>Кликабельный кусок внутри фразы — это
+        <code>AnnotatedString</code> с <code>withLink</code>, а не второй <code>Text</code> в
+        <code>Row</code>.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Фраза склеена из кусков</h3>
+        <p class="task">Под сертификатом: «Осталось 3 дня».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Text(
+    text = stringResource(R.string.left) + " " + days + " " + stringResource(R.string.days)
+)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>На русском при трех днях — правильно</li>
+          <li class="hit">«Осталось 1 дня», «Осталось 5 дня»: склонения нет</li>
+          <li class="hit">В английской версии порядок слов ломается, в арабской — направление</li>
+          <li class="hit">Переводчик видит в файле обрывки «Осталось» и «дня» без контекста</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Конкатенация фиксирует порядок слов и число форм русского языка (раздел 08). Ни то, ни
+        другое не переносится в другие локали.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Text(text = pluralStringResource(R.plurals.certificate_days_left, days, days))</code></pre>
+<pre><code>&lt;!-- values-ru/strings.xml --&gt;
+&lt;plurals name="certificate_days_left"&gt;
+    &lt;item quantity="one"&gt;Остался %d день&lt;/item&gt;
+    &lt;item quantity="few"&gt;Осталось %d дня&lt;/item&gt;
+    &lt;item quantity="many"&gt;Осталось %d дней&lt;/item&gt;
+    &lt;item quantity="other"&gt;Осталось %d дней&lt;/item&gt;
+&lt;/plurals&gt;</code></pre>
+
+        <div class="rule"><b>Правило</b>Фраза — один ресурс с плейсхолдерами. Счетная фраза —
+        <code>plurals</code>. Оператор <code>+</code> между строками ресурсов — запрещен.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Кнопка «Показать еще» появляется не всегда к месту</h3>
+        <p class="task">Описание услуги: три строки, дальше кнопка раскрытия.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Column {
+    Text(
+        text = service.description,
+        maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+        overflow = TextOverflow.Ellipsis
+    )
+    if (service.description.length &gt; 120) {          // порог подобран на глаз
+        TextButton(onClick = { isExpanded = !isExpanded }) {
+            Text(text = if (isExpanded) "Свернуть" else "Показать еще")
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li class="hit">У короткого описания из 130 символов кнопка есть, а разворачивать нечего —
+          текст и так влез</li>
+          <li class="hit">У описания из 110 символов с переносами кнопки нет, хотя текст обрезан</li>
+          <li class="hit">На крупном системном шрифте порог врет всегда</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Число символов ничего не говорит о том, поместился ли текст: это зависит от ширины экрана,
+        размера шрифта, переносов. Знает об этом только результат верстки (раздел 06).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>var isExpanded by rememberSaveable { mutableStateOf(false) }
+var isOverflowing by remember { mutableStateOf(false) }
+
+Column {
+    Text(
+        text = service.description,
+        maxLines = if (isExpanded) Int.MAX_VALUE else COLLAPSED_LINES,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { result -&gt;
+            if (!isExpanded) isOverflowing = result.hasVisualOverflow   // факт, а не догадка
+        }
+    )
+    if (isOverflowing || isExpanded) {
+        TextButton(onClick = { isExpanded = !isExpanded }) {
+            Text(text = if (isExpanded) "Свернуть" else "Показать еще")
+        }
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Влез текст или нет — спрашивают у
+        <code>TextLayoutResult</code>, а не считают символы.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Крупная сумма не помещается</h3>
+        <p class="task">Главный экран: баланс бонусов крупным шрифтом по центру.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Text(
+    text = balance,
+    fontSize = when {                              // подбираем размер руками
+        balance.length &gt; 9 -&gt; 20.sp
+        balance.length &gt; 6 -&gt; 28.sp
+        else -&gt; 36.sp
+    },
+    maxLines = 1
+)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>На обычных суммах выглядит нормально</li>
+          <li class="hit">На узком экране даже 20 sp не влезает — сумма обрезана</li>
+          <li class="hit">С крупным системным шрифтом ломается на всех порогах</li>
+          <li class="hit">Размер прыгает между 28 и 36 на соседних значениях — заметно дергается</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Длина строки не равна ее ширине: у цифр разная ширина, шрифт масштабируется системой, экран
+        бывает узким. Подбор по длине — угадывание.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>BasicText(
+    text = balance,
+    style = MaterialTheme.typography.displaySmall.copy(
+        color = MaterialTheme.colorScheme.onSurface
+    ),
+    maxLines = 1,
+    autoSize = TextAutoSize.StepBased(minFontSize = 16.sp, maxFontSize = 36.sp)
+)</code></pre>
+        <p>Компонент сам находит наибольший размер, при котором строка влезает в отведенное место.
+        Стиль передается явно, потому что <code>BasicText</code> тему не читает (раздел 01).</p>
+
+        <div class="rule"><b>Правило</b>Подгон размера — <code>autoSize</code> у
+        <code>BasicText</code>, а не <code>when</code> по длине строки.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Таймер перерисовывает весь экран</h3>
+        <p class="task">Экран оплаты: сверху обратный отсчет до истечения брони, ниже список товаров и
+        карта.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun CheckoutScreen(viewModel: CheckoutViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    Column {
+        Text(text = "Бронь истекает через ${state.secondsLeft} с")   // читаем в теле экрана
+        OrderItems(items = state.items)
+        DeliveryMap(point = state.point)
+        PayButton(onClick = viewModel::pay)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Отсчет идет правильно</li>
+          <li class="hit">Раз в секунду список и карта моргают, скролл дергается</li>
+          <li class="hit">На слабом устройстве заметны пропуски кадров, батарея греется</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Чтение состояния в теле экрана делает границей перезапуска весь экран — каждую секунду
+        заново прогоняются и список, и карта. Механизм разобран в статье про
+        <a href="recomposition-and-remember.html">рекомпозицию</a>, раздел 05.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Column {
+    ExpirationTimer(secondsLeft = { state.secondsLeft })   // чтение отложено в лямбду
+    OrderItems(items = state.items)
+    DeliveryMap(point = state.point)
+    PayButton(onClick = viewModel::pay)
+}
+
+@Composable
+private fun ExpirationTimer(secondsLeft: () -&gt; Int) {
+    Text(text = "Бронь истекает через ${secondsLeft()} с")   // перезапускается только эта функция
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Часто меняющийся текст выносится в свою composable, а значение
+        передается лямбдой.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Номер заказа нельзя скопировать</h3>
+        <p class="task">Экран заказа: номер, адрес пункта выдачи, код получения.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Column {
+    Text(text = "Заказ №${order.number}")
+    Text(text = order.pickupAddress)
+    Text(text = "Код получения: ${order.code}")
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нужно отправить номер заказа в поддержку</li>
+          <li class="hit">Долгое нажатие ничего не дает: выделить текст невозможно</li>
+          <li class="hit">Адрес приходится переписывать в карты руками</li>
+          <li class="hit">В поддержку приходят номера с опечатками</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>В отличие от <code>TextView</code>, текст в Compose не выделяется по умолчанию — разрешение
+        дает <code>SelectionContainer</code> (раздел 07).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>SelectionContainer {
+    Column {
+        Text(text = "Заказ №${order.number}")
+        Text(text = order.pickupAddress)
+        Text(text = "Код получения: ${order.code}")
+    }
+}</code></pre>
+        <p>Для одного ключевого значения удобнее явное действие — кнопка копирования рядом: она
+        заметнее, чем возможность выделить текст.</p>
+<pre class="good"><code>val clipboard = LocalClipboardManager.current
+val scope = rememberCoroutineScope()
+
+Row(verticalAlignment = Alignment.CenterVertically) {
+    Text(text = "Код получения: ${order.code}")
+    IconButton(
+        onClick = {
+            clipboard.setText(AnnotatedString(order.code))
+            scope.launch { snackbarHostState.showSnackbar("Код скопирован") }
+        }
+    ) {
+        Icon(painter = painterResource(R.drawable.ds_copy), contentDescription = "Скопировать код")
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Все, что пользователь может захотеть скопировать — номер,
+        адрес, код, реквизиты, — либо в <code>SelectionContainer</code>, либо с кнопкой
+        копирования.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видно</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Текст обрезан без многоточия</td><td><code>maxLines</code> без <code>overflow</code></td><td class="num">1</td></tr>
+        <tr><td>Верстка расходится с макетом по вертикали</td><td>межстрочный интервал и <code>Trim</code> не настроены</td><td class="num">2</td></tr>
+        <tr><td>Ссылка уезжает за край, в нее сложно попасть</td><td>фраза разбита на несколько Text</td><td class="num">3</td></tr>
+        <tr><td>«Осталось 1 дня», сломанный порядок слов</td><td>склейка строк вместо plurals</td><td class="num">4</td></tr>
+        <tr><td>«Показать еще» там, где показывать нечего</td><td>порог по числу символов</td><td class="num">5</td></tr>
+        <tr><td>Крупное число не влезает или прыгает</td><td>размер подбирается по длине строки</td><td class="num">6</td></tr>
+        <tr><td>Экран моргает раз в секунду</td><td>частое значение читается в теле экрана</td><td class="num">7</td></tr>
+        <tr><td>Номер нельзя выделить и скопировать</td><td>нет <code>SelectionContainer</code></td><td class="num">8</td></tr>
+      </table>
+      </div>
+
+      <h3>Чеклист ревью</h3>
+
+      <ol class="steps">
+        <li><code>maxLines</code> всегда идет в паре с <code>overflow</code>.</li>
+        <li>Стиль берется из <code>typography</code>; отдельные параметры — только для осознанных
+        отличий.</li>
+        <li>Фразы собираются из ресурсов с плейсхолдерами, счетные — через <code>plurals</code>.</li>
+        <li>Кликабельные куски — <code>withLink</code> внутри <code>AnnotatedString</code>.</li>
+        <li>Факт переполнения берется из <code>onTextLayout</code>, а не из длины строки.</li>
+        <li>Вертикальные метрики настроены в теме один раз, а не <code>Spacer</code>-ами.</li>
+        <li>Часто меняющийся текст изолирован в своей composable.</li>
+        <li>Номера, коды и адреса можно скопировать.</li>
+      </ol>
+
+      <div class="note ok">
+        <span class="tag">Итог</span>
+        <p><code>Text</code> — самый частый компонент и самый недооцененный: он читает стиль из
+        окружения, сам решает, как перенести и что обрезать, и умеет рассказать о результате верстки.
+        Большинство ошибок — это либо значение, заданное мимо системы (размер, цвет, склеенная фраза),
+        либо догадка вместо факта (порог по символам вместо <code>hasVisualOverflow</code>).</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>
+    11.09.2026 · Соседние статьи: <a href="theming.html">темы</a> ·
+    <a href="buttons.html">кнопки</a> · <a href="text-fields.html">поля ввода</a> ·
+    Источники:
+    <a href="https://developer.android.com/develop/ui/compose/text/configure-layout">Configure text layout</a> ·
+    <a href="https://developer.android.com/develop/ui/compose/text/style-paragraph">Style paragraph</a> ·
+    <a href="https://medium.com/androiddevelopers/fixing-font-padding-in-compose-text-768cd232425b">Fixing font padding in Compose Text</a> ·
+    <a href="https://android-developers.googleblog.com/2025/04/whats-new-in-jetpack-compose-april-25.html">What's new in Compose</a>
+  </footer>
+</div>
+</body>
+</html>

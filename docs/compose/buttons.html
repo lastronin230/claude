@@ -1,0 +1,1059 @@
+<!doctype html>
+<!-- Скелет html-страницы проекта. Единственное оформление: палитра совпадает с профилем
+     терминала Warm Light. Копируешь целиком, заменяешь {{...}}, наполняешь <main>,
+     неиспользованные блоки удаляешь. Своих css-правил не дописывать — см. skills/html-page.
+     Блок .copybar и <pre hidden> нужны только там, где страницу копируют в трекер (задачи). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кнопки: механика и восемь кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .diff{font-family:var(--mono);font-size:13.5px;line-height:1.6;background:var(--code);
+        border-radius:8px;padding:10px 0;margin:0 0 16px;overflow-x:auto}
+  .diff div{padding:0 14px 0 8px;white-space:pre}
+  .diff .add{background:#E2F0DA;box-shadow:inset 3px 0 var(--green)}
+  .diff .del{background:#F8E3DA;box-shadow:inset 3px 0 var(--red)}
+  .diff .sign{display:inline-block;width:16px;color:var(--muted);user-select:none;font-weight:700}
+  .diff .add .sign{color:var(--green)}
+  .diff .del .sign{color:var(--red)}
+  .diff mark{background:#BFDDB2;color:var(--green);border-radius:3px;padding:0 2px;font-weight:600}
+  .diff .del mark{background:#EFC7B7;color:var(--red)}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+  .mock .gone{background:var(--red-bg);color:var(--red);border-radius:3px}
+  .mock .came{background:var(--green-bg);color:var(--green);border-radius:3px}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  /* Индексная страница: список ссылок на другие страницы каталога. Кликабельна вся строка,
+     а не только заголовок — по списку ходят мышью, попадать в текст ссылки незачем. */
+  ul.index{list-style:none;margin:0 0 16px;padding:0;border-top:1px solid var(--line)}
+  ul.index li{border-bottom:1px solid var(--line)}
+  ul.index a{display:block;padding:11px 14px;text-decoration:none;color:inherit;
+             border-left:3px solid transparent}
+  ul.index a:hover{background:var(--panel);border-left-color:var(--cyan)}
+  ul.index .top{display:flex;gap:12px;align-items:baseline;margin-bottom:2px;
+                font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  ul.index .id{color:var(--cyan)}
+  ul.index .date{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul.index .name{font-size:16px;color:var(--ink)}
+
+  /* Разбор кейса: задача → как пишут → что видит пользователь → почему → как надо → правило.
+     Для обучающих страниц, где ошибка показывается вместе с последствием. Метка .lbl красит
+     только свою подпись, код под ней — pre.bad / pre.good. */
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}    .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)} .lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}   .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+  /* Имя файла над блоком кода — чтобы было видно, куда этот код кладется */
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px}
+  /* Сценарий глазами пользователя: последний пункт — то, что сломалось */
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+  /* Вывод кейса одной строкой */
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  /* Разделитель крупных частей страницы: «Часть I. Механика», «Часть II. Кейсы» */
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+
+  /* Кнопки «скопировать в трекер». Две разные: заголовок — светлая, описание — заливкой.
+     Метка H1 / MD перед подписью, чтобы не путать на ощупь. */
+  .copybar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;align-items:center}
+  .copybar button{font:inherit;font-size:13.5px;padding:6px 13px;border-radius:7px;cursor:pointer;
+    display:inline-flex;align-items:center;
+    background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+  .copybar button::before{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    padding:2px 5px;border-radius:4px;margin-right:8px;background:var(--code);color:var(--muted)}
+  .copybar button[data-copy="md-title"]::before{content:"H1"}
+  .copybar button[data-copy="md-title"]:hover{border-color:var(--muted)}
+  .copybar button[data-copy="md-body"]{background:var(--cyan-bg);color:var(--cyan);border-color:var(--cyan)}
+  .copybar button[data-copy="md-body"]::before{content:"MD";background:#FFFFFF;color:var(--cyan)}
+  .copybar button[data-copy="md-body"]:hover{background:#D6E8E7}
+  .copybar button:active{transform:translateY(1px)}
+  .copybar button[data-done]{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+  .copybar button[data-done]::before{background:#fff;color:var(--green)}
+  .copybar button:disabled{cursor:default}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Кнопки: механика и восемь кейсов</h1>
+    <p class="sub">Первая половина — из чего собрана кнопка Material 3, чем пять типов отличаются друг от друга и что делает ButtonDefaults. Вторая — восемь экранов, где кнопки ломаются: как пишут, что видит пользователь, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Из чего собрана</a>
+      <a href="#t2">02 Пять типов</a>
+      <a href="#t3">03 Параметры</a>
+      <a href="#t4">04 Слот содержимого</a>
+      <a href="#t5">05 Состояния</a>
+      <a href="#t6">06 Размер и доступность</a>
+      <a href="#t7">07 Кнопки-не-Button</a>
+      <a href="#t8">08 Дерево решений</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Двойной заказ</a>
+      <a href="#c2">2 Прыгающая ширина</a>
+      <a href="#c3">3 Мелкая иконка</a>
+      <a href="#c4">4 Серый цвет руками</a>
+      <a href="#c5">5 Кнопка из Box</a>
+      <a href="#c6">6 Текст не по краю</a>
+      <a href="#c7">7 Клик проваливается</a>
+      <a href="#c8">8 Длинная надпись</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <div class="chips">
+        <span class="chip b">Material 3</span>
+        <span class="chip">androidx.compose.material3</span>
+        <span class="chip">Button</span>
+      </div>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: из чего собрана кнопка</h2>
+        <p>Восемь разделов подряд. К концу будет понятно, почему кнопка — это не «прямоугольник с
+        текстом и обработчиком», какой из пяти типов брать и что именно ломается, когда кнопку делают
+        руками.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Из чего собрана</h2>
+
+      <p class="prose">Кнопка Material 3 — это <code>Surface</code> с нажатием, внутри которого
+      <code>Row</code>. Между ними два слоя, которые и делают содержимое «правильным» само по себе.
+      Реализация в androidx, сокращенно:</p>
+
+<pre><code>@Composable
+fun Button(
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = ButtonDefaults.shape,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
+    border: BorderStroke? = null,
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    interactionSource: MutableInteractionSource? = null,
+    content: @Composable RowScope.() -&gt; Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.semantics { role = Role.Button },      // роль для скринридера
+        enabled = enabled,
+        shape = shape,
+        color = colors.containerColor(enabled),                    // цвет зависит от состояния
+        contentColor = colors.contentColor(enabled),               // и уходит в LocalContentColor
+        shadowElevation = elevation?.shadowElevation(enabled, interactionSource)?.value ?: 0.dp,
+        border = border,
+        interactionSource = interactionSource
+    ) {
+        ProvideContentColorTextStyle(                              // типографика для содержимого
+            contentColor = colors.contentColor(enabled),
+            textStyle = MaterialTheme.typography.labelLarge
+        ) {
+            Row(
+                modifier = Modifier
+                    .defaultMinSize(
+                        minWidth = ButtonDefaults.MinWidth,
+                        minHeight = ButtonDefaults.MinHeight
+                    )
+                    .padding(contentPadding),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                content = content
+            )
+        }
+    }
+}</code></pre>
+
+      <p class="prose">Разложим по слоям — дальше каждый из них разбирается отдельно:</p>
+
+      <pre class="ascii"><code>Button
+├─ Surface(onClick)          форма, цвет контейнера, ripple по форме, перехват касаний
+│   └─ semantics { Role.Button }   скринридер говорит «кнопка», а не «текст»
+├─ colors: ButtonColors      четыре цвета: контейнер и содержимое × включена и выключена
+├─ elevation: ButtonElevation  пять высот: покой, нажатие, фокус, наведение, выключена
+├─ ProvideContentColorTextStyle
+│   ├─ LocalContentColor     Text и Icon внутри красятся сами
+│   └─ labelLarge            размер и начертание подписи — тоже сами
+└─ Row(contentPadding)       содержимое по центру, минимум 58 × 40 dp, отступы по спецификации</code></pre>
+
+      <p class="prose">Тот же результат руками — это шесть разных механизмов, и четыре из них обычно
+      забывают:</p>
+
+<pre class="bad"><code>Box(
+    modifier = Modifier
+        .clip(RoundedCornerShape(20.dp))
+        .background(MaterialTheme.colorScheme.primary)
+        .clickable { onPay() }                      // ripple прямоугольный, enabled нет,
+        .padding(horizontal = 24.dp, vertical = 10.dp)   // область нажатия = размеру
+) {
+    Text(                                           // цвет и стиль — руками, в каждой кнопке заново
+        text = "Оплатить",
+        color = MaterialTheme.colorScheme.onPrimary,
+        style = MaterialTheme.typography.labelLarge
+    )
+}</code></pre>
+
+<pre class="good"><code>Button(onClick = onPay) {
+    Text(text = "Оплатить")
+}</code></pre>
+
+      <h2 id="t2"><span class="num">02</span> Пять типов и иерархия</h2>
+
+      <p class="prose">Тип кнопки — это не оформление, а <b>вес действия на экране</b>. Material
+      задает иерархию: одно главное действие, остальное тише.</p>
+
+      <pre class="ascii"><code>вес      компонент              как выглядит
+высокий  Button                 ██████████   заливка цветом primary
+         FilledTonalButton      ▓▓▓▓▓▓▓▓▓▓   заливка приглушенным secondaryContainer
+         ElevatedButton         ░░░░░░░░░░   светлая заливка + тень
+         OutlinedButton         └────────┘   только рамка
+низкий   TextButton              Текст       только подпись</code></pre>
+
+      <p class="prose">Технически все пять — одна и та же функция с разными наборами по умолчанию:</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Тип</th><th>containerColor</th><th>elevation</th><th>border</th></tr>
+        <tr><td class="mono">Button</td><td class="mono">primary</td><td>0 dp, растет при нажатии</td><td>нет</td></tr>
+        <tr><td class="mono">FilledTonalButton</td><td class="mono">secondaryContainer</td><td>0 dp</td><td>нет</td></tr>
+        <tr><td class="mono">ElevatedButton</td><td class="mono">surfaceContainerLow</td><td>1 dp, растет при нажатии</td><td>нет</td></tr>
+        <tr><td class="mono">OutlinedButton</td><td class="mono">Color.Transparent</td><td>0 dp</td><td class="mono">outline, 1 dp</td></tr>
+        <tr><td class="mono">TextButton</td><td class="mono">Color.Transparent</td><td>0 dp</td><td>нет</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Отсюда практический вывод: <b>выбор типа — это выбор роли, а не картинки</b>. Если
+      в макете две одинаково залитых кнопки рядом, вопрос не в цвете, а в том, какое действие главное —
+      второе должно стать тональным или контурным.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Тип</th><th>Где применяется</th></tr>
+        <tr><td class="mono">Button</td><td>«Оплатить», «Записаться», «Подтвердить» — одна на экран</td></tr>
+        <tr><td class="mono">FilledTonalButton</td><td>рядом с главной: «Сохранить черновик» при «Опубликовать»</td></tr>
+        <tr><td class="mono">ElevatedButton</td><td>поверх картинки, карты, цветного блока — нужна отбивка от фона</td></tr>
+        <tr><td class="mono">OutlinedButton</td><td>«Отмена» рядом с «Удалить», действия в карточке</td></tr>
+        <tr><td class="mono">TextButton</td><td>в диалогах, под текстом, в списках: «Подробнее», «Изменить»</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t3"><span class="num">03</span> ButtonDefaults: наборы, а не значения</h2>
+
+      <p class="prose">Главное недоразумение вокруг <code>ButtonDefaults</code> — считать его набором
+      дефолтных значений, которые можно заменить своими. На самом деле каждый его объект хранит
+      <b>все состояния сразу</b> и сам переключает их.</p>
+
+      <h3>ButtonColors — четыре цвета</h3>
+
+<pre><code>ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.primary,
+    contentColor = MaterialTheme.colorScheme.onPrimary,
+    disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+)</code></pre>
+
+      <p class="prose">Внутри кнопки это превращается в одну строку
+      <code>colors.containerColor(enabled)</code>. Значит условие в коде вызывающего — дубль логики,
+      которая уже есть, и обычно худший (кейс 4):</p>
+
+<pre class="bad"><code>containerColor = if (enabled) Color(0xFF6750A4) else Color(0xFFE0E0E0)</code></pre>
+
+      <p class="prose">Переопределить можно только часть: остальные поля останутся дефолтными и
+      корректными в обеих темах. Если набор уже получен откуда-то, у него есть
+      <code>copy</code>:</p>
+
+<pre class="good"><code>// только цвет контейнера, disabled-цвета не трогаем
+colors = ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.tertiary,
+    contentColor = MaterialTheme.colorScheme.onTertiary
+)
+
+// точечная правка готового набора
+colors = ButtonDefaults.textButtonColors().copy(contentColor = MaterialTheme.colorScheme.error)</code></pre>
+
+      <h3>ButtonElevation — пять высот</h3>
+
+<pre><code>ButtonDefaults.buttonElevation(
+    defaultElevation = 0.dp,      // покой
+    pressedElevation = 0.dp,      // нажата
+    focusedElevation = 0.dp,      // фокус с клавиатуры или пульта
+    hoveredElevation = 1.dp,      // наведение курсором или стилусом
+    disabledElevation = 0.dp      // выключена
+)</code></pre>
+
+      <p class="why">Кнопка сама подписывается на <code>interactionSource</code> и <b>анимирует</b>
+      переход между этими значениями. Поэтому «убрать тень» — это <code>elevation = null</code>, а не
+      <code>shadowElevation = 0.dp</code> где-то снаружи: снаружи пропадет и анимация состояний.</p>
+
+      <h3>Размеры и отступы</h3>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Константа</th><th>Значение</th><th>Что задает</th></tr>
+        <tr><td class="mono">ButtonDefaults.MinHeight</td><td class="num">40 dp</td><td>минимальная высота кнопки</td></tr>
+        <tr><td class="mono">ButtonDefaults.MinWidth</td><td class="num">58 dp</td><td>минимальная ширина</td></tr>
+        <tr><td class="mono">ButtonDefaults.ContentPadding</td><td class="num">24 / 8 dp</td><td>отступы внутри обычной кнопки</td></tr>
+        <tr><td class="mono">ButtonDefaults.TextButtonContentPadding</td><td class="num">12 / 8 dp</td><td>отступы текстовой кнопки</td></tr>
+        <tr><td class="mono">ButtonDefaults.ButtonWithIconContentPadding</td><td class="num">16 / 8 dp</td><td>когда слева иконка</td></tr>
+        <tr><td class="mono">ButtonDefaults.IconSize</td><td class="num">18 dp</td><td>иконка внутри кнопки</td></tr>
+        <tr><td class="mono">ButtonDefaults.IconSpacing</td><td class="num">8 dp</td><td>зазор между иконкой и текстом</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Числа берутся отсюда, а не из макета: при обновлении Material они меняются
+      централизованно, а захардкоженные 24 dp остаются жить в двадцати файлах.</p>
+
+      <h2 id="t4"><span class="num">04</span> Слот содержимого: это Row</h2>
+
+      <p class="prose">У кнопки нет параметра <code>text</code>. Вместо него слот — лямбда с
+      ресивером <code>RowScope</code>. Это дает три вещи сразу: внутрь можно положить что угодно,
+      доступны <code>Modifier.weight</code> и <code>align</code>, а элементы автоматически становятся
+      в строку по центру.</p>
+
+<pre class="good"><code>Button(onClick = onShare, contentPadding = ButtonDefaults.ButtonWithIconContentPadding) {
+    Icon(
+        painter = painterResource(R.drawable.ds_share),
+        contentDescription = null,                       // текст рядом уже все говорит
+        modifier = Modifier.size(ButtonDefaults.IconSize)
+    )
+    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+    Text(text = "Поделиться")
+}</code></pre>
+
+      <p class="prose">Содержимое получает от кнопки две вещи, о которых легко забыть:</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что приходит</th><th>Откуда</th><th>Что это значит на практике</th></tr>
+        <tr><td class="mono">LocalContentColor</td><td><code>colors.contentColor(enabled)</code></td>
+            <td><code>Text</code> без <code>color</code> и <code>Icon</code> без <code>tint</code>
+            красятся правильно, в том числе в выключенном состоянии</td></tr>
+        <tr><td class="mono">labelLarge</td><td><code>ProvideContentColorTextStyle</code></td>
+            <td>подпись уже нужного размера и начертания, <code>style</code> задавать не надо</td></tr>
+      </table>
+      </div>
+
+<pre class="bad"><code>Button(onClick = onPay, enabled = false) {
+    Text(
+        text = "Оплатить",
+        color = MaterialTheme.colorScheme.onPrimary,   // выключенная кнопка останется с ярким текстом
+        style = MaterialTheme.typography.bodyMedium    // и с чужой типографикой
+    )
+}</code></pre>
+
+      <h2 id="t5"><span class="num">05</span> Состояния и взаимодействие</h2>
+
+      <p class="prose">У кнопки пять состояний. Четыре из них рантайм отслеживает сам через
+      <code>interactionSource</code>, пятое задаешь ты параметром.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Состояние</th><th>Откуда берется</th><th>Что меняется</th></tr>
+        <tr><td>покой</td><td>—</td><td>базовые цвета и высота</td></tr>
+        <tr><td>нажата</td><td class="mono">PressInteraction</td><td>ripple, <code>pressedElevation</code></td></tr>
+        <tr><td>фокус</td><td class="mono">FocusInteraction</td><td><code>focusedElevation</code>, обводка фокуса</td></tr>
+        <tr><td>наведение</td><td class="mono">HoverInteraction</td><td><code>hoveredElevation</code> — мышь, стилус, ChromeOS</td></tr>
+        <tr><td>выключена</td><td class="mono">enabled = false</td>
+            <td>disabled-цвета, снятие обработчика и ripple, сообщение скринридеру</td></tr>
+      </table>
+      </div>
+
+      <p class="prose"><code>enabled</code> — это не только «серый цвет»: кнопка перестает принимать
+      касания, перестает показывать волну и сообщает о недоступности. Поэтому условие живет в одном
+      месте:</p>
+
+<pre class="good"><code>Button(
+    onClick = { viewModel.pay() },
+    enabled = state.isPayEnabled &amp;&amp; !state.isPaying      // одна точка правды
+) {
+    Text(text = "Оплатить")
+}</code></pre>
+
+      <p class="prose">Если на нажатие должно реагировать что-то за пределами кнопки — подсветиться
+      соседнему блоку, измениться подписи, — берется <code>interactionSource</code>, а не своя
+      обработка касаний:</p>
+
+<pre class="good"><code>val interactionSource = remember { MutableInteractionSource() }
+val isPressed by interactionSource.collectIsPressedAsState()
+
+Button(onClick = onPay, interactionSource = interactionSource) {
+    Text(text = if (isPressed) "Секунду…" else "Оплатить")
+}</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Чего не делать</span>
+        <p><code>Modifier.clickable</code> поверх кнопки — обработчик сработает дважды и появится
+        второй слой ripple. Если нужно перехватить нажатие раньше кнопки, это
+        <code>pointerInput</code> с осознанным потреблением события, а не второй
+        <code>clickable</code>.</p>
+      </div>
+
+      <h2 id="t6"><span class="num">06</span> Размер и доступность</h2>
+
+      <p class="prose">Визуальный размер и область нажатия — разные вещи. Кнопка может быть высотой
+      40 dp, но нажиматься в области 48 dp: вокруг нее есть невидимый запас, который добавляет
+      <code>Modifier.minimumInteractiveComponentSize()</code>.</p>
+
+      <pre class="ascii"><code>┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐   48 dp — область нажатия, невидима
+│  ┌───────────────────┐  │
+│  │    Оплатить       │  │   40 dp — то, что видно: MinHeight
+│  └───────────────────┘  │
+└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+
+у IconButton то же самое: иконка 24 dp, область нажатия 48 dp</code></pre>
+
+      <p class="why">Отсюда две вещи. Первая: кнопки в ряду не стоит ставить ближе 8 dp друг к другу —
+      их невидимые области нажатия начнут пересекаться. Вторая: если кнопка выглядит меньше 48 dp и
+      при этом плохо нажимается, значит она собрана руками и запаса у нее нет (кейс 3).</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что нужно доступности</th><th>Кто дает</th></tr>
+        <tr><td>роль «кнопка» для скринридера</td><td><code>semantics { role = Role.Button }</code> внутри компонента</td></tr>
+        <tr><td>сообщение «недоступно»</td><td><code>enabled = false</code></td></tr>
+        <tr><td>описание действия для кнопки без текста</td><td><code>contentDescription</code> у иконки — обязателен</td></tr>
+        <tr><td>область нажатия 48 dp</td><td><code>minimumInteractiveComponentSize</code> внутри компонента</td></tr>
+        <tr><td>работа с клавиатуры и пульта</td><td>фокус и <code>Enter</code> — тоже из коробки</td></tr>
+      </table>
+      </div>
+
+      <div class="note strict">
+        <span class="tag">Единственное, что нельзя опускать</span>
+        <p>У кнопки без текста <code>contentDescription</code> — единственное, что услышит незрячий
+        пользователь. <code>null</code> ставится только там, где рядом есть подпись, объясняющая
+        действие: в <code>Button</code> с иконкой и текстом — да, у <code>IconButton</code> —
+        никогда.</p>
+      </div>
+
+      <h2 id="t7"><span class="num">07</span> Кнопки, которые не Button</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Компонент</th><th>Когда</th></tr>
+        <tr><td class="mono">IconButton</td><td>действие одной иконкой: закрыть, поделиться, избранное</td></tr>
+        <tr><td class="mono">FilledIconButton, OutlinedIconButton</td><td>то же, но иконке нужен вес или отбивка</td></tr>
+        <tr><td class="mono">IconToggleButton</td><td>иконка с состоянием: лайк, звук, избранное</td></tr>
+        <tr><td class="mono">FloatingActionButton</td><td>главное действие экрана, плавающее над контентом</td></tr>
+        <tr><td class="mono">ExtendedFloatingActionButton</td><td>то же с подписью, когда иконка непонятна без слова</td></tr>
+        <tr><td class="mono">SegmentedButton</td><td>выбор одного или нескольких из 2-5 вариантов</td></tr>
+        <tr><td class="mono">FilterChip, AssistChip</td><td>фильтры и подсказки — это не кнопки, у них своя роль</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t8"><span class="num">08</span> Дерево решений</h2>
+
+      <pre class="ascii"><code>Что делает элемент?
+│
+├─ главное действие экрана
+│    ├─ в потоке контента          → Button
+│    └─ плавает над контентом      → FloatingActionButton (в слот Scaffold)
+│
+├─ второе по важности рядом с главным  → FilledTonalButton
+│     └─ фон пестрый, нужна отбивка    → ElevatedButton
+│
+├─ второстепенное, обратимое (отмена, назад)  → OutlinedButton
+│
+├─ мелкое, в списке или диалоге               → TextButton
+│
+├─ только иконка
+│    ├─ без состояния   → IconButton
+│    └─ с состоянием    → IconToggleButton
+│
+└─ выбор из нескольких вариантов              → SegmentedButton / FilterChip</code></pre>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Восемь кейсов</h2>
+        <p>Задача, код как его пишут, что видит пользователь, объяснение через разделы части I и
+        правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Два заказа вместо одного</h3>
+        <p class="task">Экран оформления: кнопка «Оплатить» отправляет заказ на сервер.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun CheckoutScreen(viewModel: CheckoutViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    Column {
+        OrderSummary(order = state.order)
+        Button(
+            onClick = { viewModel.pay() },          // защиты от повторного нажатия нет
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Оплатить")
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал «Оплатить», ничего видимого не произошло — запрос идет секунду</li>
+          <li>Нажал еще раз, на всякий случай</li>
+          <li class="hit">Оформились два заказа, списались деньги дважды</li>
+          <li class="hit">На медленной сети хватает и одного нажатия с «дребезгом» пальца</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Кнопка ничего не знает о том, что запрос уже идет: <code>enabled</code> по умолчанию
+        <code>true</code>, обработчик срабатывает на каждое нажатие. Состояние «идет оплата» есть во
+        ViewModel, но до кнопки не доведено (раздел 05).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Button(
+    onClick = { viewModel.pay() },
+    enabled = !state.isPaying,                      // одна точка правды
+    modifier = Modifier.fillMaxWidth()
+) {
+    if (state.isPaying) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+            strokeWidth = 2.dp,
+            color = LocalContentColor.current
+        )
+    } else {
+        Text(text = "Оплатить")
+    }
+}</code></pre>
+        <p class="filename">CheckoutViewModel.kt — вторая половина защиты</p>
+<pre class="good"><code>fun pay() {
+    if (_state.value.isPaying) return               // гонку ловим и здесь тоже
+    viewModelScope.launch {
+        _state.update { it.copy(isPaying = true) }
+        ...
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Кнопка, запускающая запрос, обязана иметь
+        <code>enabled</code>, завязанный на состояние запроса. Проверка во ViewModel — вторая линия, а
+        не замена первой.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Кнопка дергается при загрузке</h3>
+        <p class="task">Та же кнопка с индикатором из кейса 1, но по ширине контента.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Button(onClick = onSave, enabled = !state.isSaving) {
+    if (state.isSaving) {
+        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+    } else {
+        Text(text = "Сохранить изменения")
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал «Сохранить изменения»</li>
+          <li class="hit">Кнопка резко схлопнулась до кружочка, соседние элементы подпрыгнули</li>
+          <li class="hit">После ответа так же резко развернулась обратно</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Кнопка по умолчанию занимает ровно ширину содержимого. Текст из двух слов и спиннер 16 dp —
+        разная ширина, и layout пересчитывается скачком.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// вариант 1: ширина задана заранее — самый простой
+Button(
+    onClick = onSave,
+    enabled = !state.isSaving,
+    modifier = Modifier.fillMaxWidth()
+) { … }
+
+// вариант 2: содержимое меняется, размер сохраняется
+Button(onClick = onSave, enabled = !state.isSaving) {
+    Box(contentAlignment = Alignment.Center) {
+        Text(
+            text = "Сохранить изменения",
+            modifier = Modifier.alpha(if (state.isSaving) 0f else 1f)   // место занято, текст невидим
+        )
+        if (state.isSaving) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+                strokeWidth = 2.dp,
+                color = LocalContentColor.current
+            )
+        }
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Содержимое кнопки меняется — ширина не должна. Либо
+        фиксируется размер, либо старое содержимое остается на месте прозрачным.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. В иконку невозможно попасть</h3>
+        <p class="task">Строка списка сертификатов, справа иконка «поделиться».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Icon(
+    painter = painterResource(R.drawable.ds_share),
+    contentDescription = null,
+    modifier = Modifier
+        .size(20.dp)
+        .clickable { onShare(certificate.id) }      // область нажатия = размер иконки
+)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li class="hit">С первого раза попасть не получается, приходится целиться</li>
+          <li class="hit">Нет волны нажатия — непонятно, сработало или нет</li>
+          <li class="hit">Скринридер называет элемент «изображение», без действия</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>20 dp вместо минимальных 48 dp (раздел 06), <code>clickable</code> вместо кнопки — нет ни
+        ripple по форме, ни роли для доступности, ни <code>contentDescription</code>.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>IconButton(onClick = { onShare(certificate.id) }) {
+    Icon(
+        painter = painterResource(R.drawable.ds_share),
+        contentDescription = "Поделиться сертификатом"
+    )
+}</code></pre>
+        <p><code>IconButton</code> сам держит область 48 × 48 dp, круглый ripple по центру и роль
+        кнопки. Иконка внутри может быть любого размера — цель нажатия от этого не уменьшится.</p>
+
+        <div class="rule"><b>Правило</b>Кликабельная иконка — это <code>IconButton</code> с
+        <code>contentDescription</code>, а не <code>Icon</code> с <code>clickable</code>.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Отключенная кнопка не видна в темной теме</h3>
+        <p class="task">Кнопка «Далее» неактивна, пока форма не заполнена.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Button(
+    onClick = onNext,
+    enabled = state.isValid,
+    colors = ButtonDefaults.buttonColors(
+        containerColor = if (state.isValid) Color(0xFF6750A4) else Color(0xFFE0E0E0),
+        contentColor = if (state.isValid) Color.White else Color(0xFF9E9E9E)
+    )
+) { Text(text = "Далее") }</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>В светлой теме выглядит нормально</li>
+          <li class="hit">В темной неактивная кнопка — светло-серое пятно на темном фоне, ярче
+          активной</li>
+          <li class="hit">После обновления дизайн-системы фирменный цвет поменялся везде, кроме этой
+          кнопки</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>ButtonColors</code> уже хранит все четыре цвета, включая
+        <code>disabledContainerColor</code> и <code>disabledContentColor</code>, и переключает их сам
+        по <code>enabled</code> (раздел 03). Условие в коде дублирует эту логику и делает это хуже:
+        мимо темы.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Button(onClick = onNext, enabled = state.isValid) {
+    Text(text = "Далее")
+}</code></pre>
+        <p>Нужен свой фирменный цвет — задается набором, а не условием:</p>
+<pre class="good"><code>colors = ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.tertiary,
+    contentColor = MaterialTheme.colorScheme.onTertiary
+    // disabled-цвета остаются дефолтными и корректны в обеих темах
+)</code></pre>
+
+        <div class="rule"><b>Правило</b>Состояние кнопки переключает <code>enabled</code>, а не
+        <code>if</code> в цветах. Цвета из схемы, не хардкодом.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Своя кнопка из Box</h3>
+        <p class="task">По макету кнопка со скруглением 12 dp и своим фоном — «Button не подходит».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun PrimaryButton(text: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .clickable { onClick() }
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = text, color = MaterialTheme.colorScheme.onPrimary)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Выглядит как кнопка</li>
+          <li class="hit">Нажимается даже во время загрузки: <code>enabled</code> у нее нет вообще</li>
+          <li class="hit">Клик срабатывает при промахе в 2 dp мимо текста — и не срабатывает у края</li>
+          <li class="hit">Скринридер читает «Оплатить», но не говорит, что это кнопка</li>
+          <li class="hit">Нет состояния нажатия и высоты — на пестром фоне кнопка теряется</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Из шести работ раздела 01 самодельная кнопка делает две: фон и форму. Остальные —
+        <code>enabled</code>, ripple по форме, минимальная область нажатия, роль для доступности —
+        отсутствуют молча.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun PrimaryButton(
+    text: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp)        // отличие от дефолта — один параметр
+    ) {
+        Text(text = text)
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Расхождение с макетом — это параметр
+        (<code>shape</code>, <code>colors</code>, <code>contentPadding</code>), а не повод собирать
+        кнопку заново.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Текстовая кнопка не выравнивается по краю</h3>
+        <p class="task">Под блоком текста — ссылка-действие «Показать все отзывы».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Text(text = review.text)
+    TextButton(onClick = onShowAll) {
+        Text(text = "Показать все отзывы")        // текст начинается правее абзаца
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li class="hit">Подпись кнопки сдвинута вправо относительно текста над ней на 12 dp</li>
+          <li class="hit">Дизайнер приносит скриншот с линейкой, разработчик добавляет
+          <code>offset(x = (-12).dp)</code> — и ломает область нажатия</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>У <code>TextButton</code> есть собственные внутренние отступы
+        (<code>ButtonDefaults.TextButtonContentPadding</code>) — они нужны, чтобы область нажатия была
+        достаточной. Визуальный край текста и край компонента не совпадают намеренно.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+    Text(text = review.text)
+    TextButton(
+        onClick = onShowAll,
+        modifier = Modifier.offset(x = -ButtonDefaults.TextButtonContentPadding
+            .calculateLeftPadding(LayoutDirection.Ltr))   // компенсируем ровно на величину отступа
+    ) {
+        Text(text = "Показать все отзывы")
+    }
+}</code></pre>
+        <p>Второй вариант, если строка кнопки одна и она первая в колонке — уменьшить внешний отступ
+        самой колонки и добавить его остальным элементам. Что нельзя — сдвигать на подобранное на глаз
+        число: оно не совпадет с отступом при смене типа кнопки.</p>
+
+        <div class="rule"><b>Правило</b>Компенсируется именно та величина, что задана в
+        <code>ButtonDefaults</code>, а не число из макета.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Клик по кнопке открывает весь экран</h3>
+        <p class="task">Строка компании в списке: вся строка ведет на экран компании, внутри кнопка
+        «В избранное».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Surface(onClick = { onOpenCompany(company.id) }) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        CompanyLogo(url = company.logoUrl)
+        Text(text = company.name, modifier = Modifier.weight(1f))
+        Icon(
+            painter = painterResource(R.drawable.ds_heart),
+            contentDescription = null,
+            modifier = Modifier.clickable { onToggleFavorite(company.id) }
+        )
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал на сердечко, чтобы добавить компанию в избранное</li>
+          <li class="hit">Компания добавилась — и одновременно открылся ее экран</li>
+          <li class="hit">Иногда открывается только экран: попал на пиксель мимо иконки</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>Modifier.clickable</code> обрабатывает нажатие, но событие продолжает подниматься к
+        родителю. Вложенные кликабельные области требуют, чтобы внутренняя была полноценной кнопкой:
+        <code>IconButton</code> потребляет касание и не пропускает его дальше.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Surface(onClick = { onOpenCompany(company.id) }) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        CompanyLogo(url = company.logoUrl)
+        Text(text = company.name, modifier = Modifier.weight(1f))
+        IconToggleButton(
+            checked = company.isFavorite,
+            onCheckedChange = { onToggleFavorite(company.id) }
+        ) {
+            Icon(
+                painter = painterResource(
+                    if (company.isFavorite) R.drawable.ds_heart_filled else R.drawable.ds_heart
+                ),
+                contentDescription = if (company.isFavorite) "Убрать из избранного"
+                    else "В избранное"
+            )
+        }
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Кнопка внутри кликабельной строки — только настоящая кнопка.
+        Заодно решается область нажатия: 48 dp вместо размера иконки.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Надпись не влезла</h3>
+        <p class="task">Две кнопки в ряд: «Отмена» и «Подтвердить запись».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+        Text(text = stringResource(R.string.common_cancel))
+    }
+    Button(onClick = onConfirm, modifier = Modifier.weight(1f)) {
+        Text(text = stringResource(R.string.booking_confirm))
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>На русском обе кнопки выглядят правильно</li>
+          <li class="hit">На немецком подпись обрезается многоточием: «Terminbestäti…»</li>
+          <li class="hit">На арабском текст переносится на две строки, кнопки становятся разной высоты</li>
+          <li class="hit">При системном увеличении шрифта то же самое происходит и на русском</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>weight(1f)</code> делит ширину поровну независимо от длины подписей, а
+        <code>Text</code> внутри кнопки по умолчанию обрезается в одну строку. Тестируется это только
+        на длинной локали или с крупным системным шрифтом.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// вариант 1: кнопки друг под другом — надежнее всего для длинных подписей
+Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
+        Text(text = stringResource(R.string.booking_confirm))
+    }
+    TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+        Text(text = stringResource(R.string.common_cancel))
+    }
+}
+
+// вариант 2: остаемся в строке, но ширина по содержимому
+Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    OutlinedButton(onClick = onCancel) { Text(text = stringResource(R.string.common_cancel)) }
+    Button(onClick = onConfirm, modifier = Modifier.weight(1f)) {
+        Text(text = stringResource(R.string.booking_confirm), maxLines = 2)
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Проверка кнопок — на самой длинной локали проекта и при
+        максимальном системном шрифте, а не на русском с дефолтными настройками.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видно</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Два одинаковых заказа</td><td>нет <code>enabled</code> на время запроса</td><td class="num">1</td></tr>
+        <tr><td>Кнопка схлопывается при загрузке</td><td>содержимое меняет ширину</td><td class="num">2</td></tr>
+        <tr><td>В иконку сложно попасть</td><td><code>clickable</code> вместо <code>IconButton</code></td><td class="num">3</td></tr>
+        <tr><td>Неактивная кнопка ярче активной</td><td>цвета через <code>if</code>, а не набором</td><td class="num">4</td></tr>
+        <tr><td>Нет ripple, нет disabled, молчит скринридер</td><td>кнопка собрана из <code>Box</code></td><td class="num">5</td></tr>
+        <tr><td>Подпись кнопки сдвинута вправо</td><td>внутренние отступы <code>TextButton</code></td><td class="num">6</td></tr>
+        <tr><td>Тап по иконке открывает экран</td><td>вложенный <code>clickable</code> не потребляет касание</td><td class="num">7</td></tr>
+        <tr><td>Подпись обрезана на другой локали</td><td><code>weight</code> и одна строка текста</td><td class="num">8</td></tr>
+      </table>
+      </div>
+
+      <h3>Чеклист ревью</h3>
+
+      <ol class="steps">
+        <li>Тип кнопки соответствует весу действия: на экране одна главная.</li>
+        <li>У кнопки, запускающей запрос, есть <code>enabled</code> по состоянию запроса.</li>
+        <li>Цвета — из схемы через <code>ButtonDefaults</code>, без <code>if</code> и хардкода.</li>
+        <li>Кликабельная иконка — <code>IconButton</code> с <code>contentDescription</code>.</li>
+        <li>Область нажатия не меньше 48 dp.</li>
+        <li>Иконка внутри кнопки — <code>ButtonDefaults.IconSize</code> и <code>IconSpacing</code>.</li>
+        <li>Подписи проверены на самой длинной локали и при крупном системном шрифте.</li>
+        <li>Внутри кликабельной строки — только настоящие кнопки.</li>
+      </ol>
+
+      <div class="note ok">
+        <span class="tag">Итог</span>
+        <p>Кнопка — это не прямоугольник с обработчиком, а шесть работ сразу: форма, цвета всех
+        состояний, ripple по форме, минимальная область нажатия, роль для доступности и типографика
+        содержимого. Отсюда два практических вывода: своя кнопка из <code>Box</code> почти всегда
+        теряет половину из них, а расхождение с макетом решается параметром, а не новой реализацией.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>11.09.2026 · Соседние статьи: <a href="text-fields.html">поля ввода</a> · <a href="surface.html">Surface</a> · <a href="scaffold.html">Scaffold</a></footer>
+</div>
+</body>
+</html>

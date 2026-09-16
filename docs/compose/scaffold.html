@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaffold: механика и восемь кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+  footer a{color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}   .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)}.lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}  .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;
+    font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px;text-transform:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Scaffold: механика и восемь кейсов</h1>
+    <p class="sub">Первая половина — что Scaffold расставляет сам, что такое innerPadding и почему списку нужен не тот отступ, что колонке. Вторая — восемь экранов, где это ломается: как пишут, что видно на экране, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Что это такое</a>
+      <a href="#t2">02 Слоты и параметры</a>
+      <a href="#t3">03 innerPadding</a>
+      <a href="#t4">04 Список внутри</a>
+      <a href="#t5">05 Системные отступы</a>
+      <a href="#t6">06 Сворачиваемый топбар</a>
+      <a href="#t7">07 Snackbar</a>
+      <a href="#t8">08 Цвета</a>
+      <a href="#t9">09 Когда не нужен</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Контент под баром</a>
+      <a href="#c2">2 Список обрезан</a>
+      <a href="#c3">3 Двойной отступ</a>
+      <a href="#c4">4 Бар не сворачивается</a>
+      <a href="#c5">5 FAB в контенте</a>
+      <a href="#c6">6 Снекбар не виден</a>
+      <a href="#c7">7 Прыжок над клавиатурой</a>
+      <a href="#c8">8 Лишний Surface</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <div class="chips">
+        <span class="chip b">Material 3</span>
+        <span class="chip">androidx.compose.material3</span>
+        <span class="chip">Scaffold</span>
+      </div>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: что такое Scaffold</h2>
+        <p>Девять разделов. К концу будет понятно, что именно он делает, какой единственный контракт
+        требует взамен и почему почти все ошибки этой темы сводятся к отступу — не применили или
+        применили дважды.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Что это такое</h2>
+
+      <p class="prose"><code>Scaffold</code> — раскладка экрана по ролям. Он знает, что топбар сверху,
+      навигационная панель снизу, снекбар над ними, кнопка действия в углу: расставляет их и сообщает
+      содержимому, сколько места они заняли. Сам ничего не рисует, кроме фона.</p>
+
+      <pre class="ascii"><code>┌──────────────────────────────────┐
+│ topBar                           │  ← слот: TopAppBar
+├──────────────────────────────────┤
+│                                  │
+│ content(innerPadding)            │  ← лямбда: твой экран
+│                                  │     innerPadding = сколько заняли бары и системные полосы
+│                        ┌───────┐ │
+│                        │  FAB  │ │  ← слот: floatingActionButton
+│                        └───────┘ │
+│ ┌──────────────────────────────┐ │
+│ │ snackbarHost                 │ │  ← слот: сам поднимается над FAB и bottomBar
+│ └──────────────────────────────┘ │
+├──────────────────────────────────┤
+│ bottomBar                        │  ← слот: NavigationBar / BottomAppBar
+└──────────────────────────────────┘</code></pre>
+
+      <h2 id="t2"><span class="num">02</span> Слоты и параметры</h2>
+
+<pre><code>@Composable
+fun Scaffold(
+    modifier: Modifier = Modifier,
+    topBar: @Composable () -&gt; Unit = {},
+    bottomBar: @Composable () -&gt; Unit = {},
+    snackbarHost: @Composable () -&gt; Unit = {},
+    floatingActionButton: @Composable () -&gt; Unit = {},
+    floatingActionButtonPosition: FabPosition = FabPosition.End,
+    containerColor: Color = MaterialTheme.colorScheme.background,
+    contentColor: Color = contentColorFor(containerColor),
+    contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
+    content: @Composable (PaddingValues) -&gt; Unit
+)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Параметр</th><th>Что делает</th></tr>
+        <tr><td class="mono">topBar / bottomBar</td>
+            <td>Прижимаются к верху и низу, их высота попадает в <code>innerPadding</code></td></tr>
+        <tr><td class="mono">snackbarHost</td>
+            <td>Место показа снекбаров; Scaffold сам поднимает их над FAB и нижней панелью</td></tr>
+        <tr><td class="mono">floatingActionButton</td>
+            <td>Кнопка действия; под нее резервируется место, снекбар ее не перекрывает</td></tr>
+        <tr><td class="mono">containerColor / contentColor</td>
+            <td>Фон экрана и цвет содержимого: внутри это <code>Surface</code></td></tr>
+        <tr><td class="mono">contentWindowInsets</td>
+            <td>Какие системные полосы учитывать при расчете <code>innerPadding</code></td></tr>
+        <tr><td class="mono">content</td>
+            <td>Лямбда, получающая <code>PaddingValues</code> — это и есть главный контракт</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t3"><span class="num">03</span> innerPadding: единственное, что Scaffold требует от тебя</h2>
+
+      <p class="prose"><code>Scaffold</code> не применяет отступы к содержимому — он их только считает
+      и отдает. Применить обязан ты. Причина в том, что «правильно» зависит от содержимого: обычной
+      колонке нужен <code>Modifier.padding</code>, списку — <code>contentPadding</code>,
+      полноэкранной картинке — ничего.</p>
+
+<pre class="good"><code>Scaffold(
+    topBar = { TopAppBar(title = { Text(text = "Профиль") }) },
+    bottomBar = { NavigationBar { … } }
+) { innerPadding -&gt;
+    Column(modifier = Modifier.padding(innerPadding)) {
+        Text(text = "Содержимое экрана")
+    }
+}</code></pre>
+
+      <p class="why">Компилятор не помогает: неиспользованный параметр лямбды — законный код. Отсюда
+      кейс 1.</p>
+
+      <h2 id="t4"><span class="num">04</span> Список внутри: padding или contentPadding</h2>
+
+      <pre class="ascii"><code>Modifier.padding(innerPadding)          contentPadding = innerPadding
+┌──────────────────────┐                ┌──────────────────────┐
+│ topBar               │                │ topBar    ░░░░░░░░░░ │ ← элемент виден под баром
+├──────────────────────┤                ├─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
+│ ┌──────────────────┐ │                │ элемент 2            │
+│ │ элемент 1        │ │                │ элемент 3            │
+│ │ элемент 2        │ │ список         │ элемент 4            │  список во всю высоту,
+│ └──────────────────┘ │ короче экрана  │                      │  сдвинуто только содержимое
+└──────────────────────┘                └──────────────────────┘</code></pre>
+
+<pre class="good"><code>Scaffold(topBar = { TopAppBar(title = { Text(text = "Лента") }) }) { innerPadding -&gt;
+    LazyColumn(
+        modifier = Modifier.consumeWindowInsets(innerPadding),
+        contentPadding = innerPadding
+    ) {
+        items(items = items, key = { it.id }) { item -&gt; FeedRow(item = item) }
+    }
+}</code></pre>
+
+      <p class="why"><code>consumeWindowInsets</code> сообщает вложенным элементам, что эта часть
+      системных отступов уже учтена. Без него дочерний элемент, который сам добавляет отступ под
+      клавиатуру или навигационную полосу, добавит его повторно — кейс 7.</p>
+
+      <h2 id="t5"><span class="num">05</span> Системные отступы: что Scaffold знает</h2>
+
+      <p class="prose">В <code>innerPadding</code> складываются две вещи: высоты слотов и системные
+      полосы из <code>contentWindowInsets</code>. По умолчанию это статусбар и навигационная полоса.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Задача</th><th>Как</th></tr>
+        <tr><td>Обычный экран во весь экран</td><td>Ничего не менять: <code>ScaffoldDefaults.contentWindowInsets</code></td></tr>
+        <tr><td>Экран сам управляет отступами (фон под статусбаром)</td><td><code>contentWindowInsets = WindowInsets(0, 0, 0, 0)</code></td></tr>
+        <tr><td>Поле ввода поднимается над клавиатурой</td><td><code>Modifier.imePadding()</code> на нужной части содержимого</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t6"><span class="num">06</span> Сворачиваемый топбар: два обязательных куска</h2>
+
+      <p class="prose">Поведение прокрутки живет не в баре, а в связке «объект поведения + подключение
+      к прокрутке на Scaffold». Забыть второй кусок легко — кейс 4.</p>
+
+<pre class="good"><code>val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+Scaffold(
+    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),   // 1. подключение
+    topBar = {
+        TopAppBar(
+            title = { Text(text = "Лента") },
+            scrollBehavior = scrollBehavior                                    // 2. передача бару
+        )
+    }
+) { innerPadding -&gt;
+    LazyColumn(
+        modifier = Modifier.consumeWindowInsets(innerPadding),
+        contentPadding = innerPadding
+    ) { … }
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Поведение</th><th>Что происходит при прокрутке</th></tr>
+        <tr><td class="mono">pinnedScrollBehavior</td><td>Бар остается, но меняет цвет</td></tr>
+        <tr><td class="mono">enterAlwaysScrollBehavior</td><td>Уезжает вверх, возвращается при первом движении вниз</td></tr>
+        <tr><td class="mono">exitUntilCollapsedScrollBehavior</td><td>Большой бар сжимается до обычного</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t7"><span class="num">07</span> Snackbar</h2>
+
+      <p class="prose">Показ снекбара — <code>suspend</code>-функция, поэтому нужны две вещи:
+      состояние хоста и корутинный скоуп.</p>
+
+<pre class="good"><code>val snackbarHostState = remember { SnackbarHostState() }
+val scope = rememberCoroutineScope()
+
+Scaffold(
+    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+    floatingActionButton = {
+        FloatingActionButton(
+            onClick = { scope.launch { snackbarHostState.showSnackbar(message = "Сохранено") } }
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Добавить")
+        }
+    }
+) { innerPadding -&gt; … }</code></pre>
+
+      <h2 id="t8"><span class="num">08</span> Цвета: Scaffold — это Surface</h2>
+
+      <p class="prose">Внутри <code>Scaffold</code> — <code>Surface</code> на весь экран с
+      <code>containerColor</code> (по умолчанию <code>colorScheme.background</code>) и парным
+      <code>contentColor</code>. Отсюда: фон экрана меняется параметром, а не обертыванием во второй
+      <code>Surface</code>, и текст внутри уже получает читаемый цвет.</p>
+
+<pre class="good"><code>Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest) { … }</code></pre>
+
+      <h2 id="t9"><span class="num">09</span> Когда Scaffold не нужен</h2>
+
+      <pre class="ascii"><code>Есть ли у экрана хоть один слот: топбар, нижняя панель, FAB, снекбар?
+│
+├─ НЕТ → Column / Box плюс Modifier.windowInsetsPadding, если экран во весь экран
+│        (диалог, шторка, вкладка внутри уже существующего Scaffold)
+│
+└─ ДА  → Scaffold, один на экран
+         │
+         └─ Нужна адаптивная навигация (рельса на планшете, панель снизу на телефоне)?
+            └─ ДА → навигационные каркасы из adaptive-библиотек Material 3</code></pre>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Восемь кейсов</h2>
+        <p>Задача, код как его пишут, что видно на экране, объяснение через разделы части I и
+        правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Первая строка спрятана под топбаром</h3>
+        <p class="task">Экран профиля: заголовок сверху, нижняя навигация, контент между ними.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun ProfileScreen(state: ProfileUiState) {
+    Scaffold(
+        topBar = { TopAppBar(title = { Text(text = "Профиль") }) },
+        bottomBar = { AppNavigationBar() }
+    ) { _ -&gt;                                   // параметр проигнорирован
+        Column {
+            Text(text = state.name, style = MaterialTheme.typography.headlineSmall)
+            Text(text = state.phone)
+            ProfileActions(actions = state.actions)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li class="hit">Имя пользователя наполовину скрыто топбаром</li>
+          <li class="hit">Последний пункт списка действий уехал под нижнюю панель и не нажимается</li>
+          <li class="hit">На устройствах с жестовой навигацией внизу срезается еще полоса</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>Scaffold</code> отступы только считает, а применяет их содержимое (раздел 03).
+        Компилятор молчит: <code>_</code> вместо имени параметра — законный код.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>) { innerPadding -&gt;
+    Column(modifier = Modifier.padding(innerPadding)) { … }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Символ <code>_</code> в лямбде <code>Scaffold</code> — повод
+        остановиться и объяснить себе, почему отступ не нужен.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Список кончается раньше экрана</h3>
+        <p class="task">Лента компаний под полупрозрачным топбаром.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Scaffold(topBar = { TopAppBar(title = { Text(text = "Лента") }) }) { innerPadding -&gt;
+    LazyColumn(modifier = Modifier.padding(innerPadding)) {
+        items(items = state.items, key = { it.id }) { company -&gt;
+            CompanyRow(company = company)
+        }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Отступ вроде правильный, ничего не перекрыто</li>
+          <li class="hit">Элементы обрезаются ровно по нижней кромке топбара, а не уезжают под него</li>
+          <li class="hit">Между баром и первым элементом видна полоса фона — эффект «список в коробке»</li>
+          <li class="hit">Скроллбар начинается не от края экрана</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>Modifier.padding</code> уменьшает сам список: он заканчивается там, где начинается
+        бар. <code>contentPadding</code> оставляет список во всю высоту и сдвигает только содержимое
+        внутри — тогда элементы прокручиваются под баром, как задумано в Material (раздел 04).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>LazyColumn(
+    modifier = Modifier.consumeWindowInsets(innerPadding),
+    contentPadding = innerPadding
+) {
+    items(items = state.items, key = { it.id }) { company -&gt;
+        CompanyRow(company = company)
+    }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Прокручиваемому содержимому — <code>contentPadding</code>,
+        непрокручиваемому — <code>Modifier.padding</code>.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Контент опустился на две высоты статусбара</h3>
+        <p class="task">Экран с вкладками, каждая вкладка написана как самостоятельный экран.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun WalletTabsScreen() {
+    Scaffold(topBar = { TopAppBar(title = { Text(text = "Кошелек") }) }) { outerPadding -&gt;
+        Column(modifier = Modifier.padding(outerPadding)) {
+            TabRow(selectedTabIndex = selected) { … }
+            when (selected) {
+                0 -&gt; CardsTab()          // а внутри — свой Scaffold
+                1 -&gt; HistoryTab()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardsTab() {
+    Scaffold { innerPadding -&gt;               // второй каркас на том же экране
+        LazyColumn(contentPadding = innerPadding) { … }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li class="hit">Между вкладками и первым элементом зияет пустая полоса</li>
+          <li class="hit">Внизу такой же лишний зазор над навигационной полосой</li>
+          <li class="hit">На устройствах с большим вырезом расхождение с макетом еще заметнее</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Вложенный <code>Scaffold</code> считает системные полосы заново, ничего не зная о том, что
+        внешний их уже учел. Высота статусбара попадает в отступ дважды (раздел 05).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+private fun CardsTab(contentPadding: PaddingValues) {   // каркас один на экран
+    LazyColumn(contentPadding = contentPadding) { … }
+}</code></pre>
+        <p>Если вложенный каркас нужен по устройству кода, у него отключаются системные полосы:
+        <code>contentWindowInsets = WindowInsets(0, 0, 0, 0)</code>.</p>
+
+        <div class="rule"><b>Правило</b>Один экран — один <code>Scaffold</code>.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Топбар отказывается сворачиваться</h3>
+        <p class="task">Длинная лента: при прокрутке вниз шапка должна уезжать.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+Scaffold(                                        // подключения к прокрутке нет
+    topBar = {
+        TopAppBar(title = { Text(text = "Лента") }, scrollBehavior = scrollBehavior)
+    }
+) { innerPadding -&gt;
+    LazyColumn(contentPadding = innerPadding) { … }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Список прокручивается нормально</li>
+          <li class="hit">Шапка стоит на месте, хотя по макету должна уезжать</li>
+          <li class="hit">Ни ошибки, ни предупреждения — код выглядит правильным</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Объект поведения умеет менять вид бара, но не знает, что происходит с прокруткой, пока его
+        не подключили к дереву через <code>nestedScroll</code> (раздел 06). Кусков всегда два, а
+        забывается обычно первый.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Scaffold(
+    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+    topBar = { TopAppBar(title = { Text(text = "Лента") }, scrollBehavior = scrollBehavior) }
+) { … }</code></pre>
+
+        <div class="rule"><b>Правило</b>Поведение топбара — это всегда пара: создать и подключить.
+        Один <code>scrollBehavior</code> на экран, создается через <code>remember</code> внутри
+        <code>TopAppBarDefaults</code>.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Снекбар выезжает под кнопкой</h3>
+        <p class="task">Список адресов, кнопка добавления в правом нижнем углу.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Scaffold(
+    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+) { innerPadding -&gt;
+    Box(modifier = Modifier.padding(innerPadding)) {
+        AddressList(addresses = state.addresses)
+        FloatingActionButton(                          // кнопка внутри содержимого
+            onClick = onAdd,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        ) { Icon(imageVector = Icons.Default.Add, contentDescription = "Добавить") }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li class="hit">Снекбар вылезает прямо под кнопкой и перекрывается ею</li>
+          <li class="hit">Последний адрес в списке навсегда спрятан под кнопкой, до него не
+          доскроллить</li>
+          <li class="hit">На жестовой навигации кнопка налезает на системную полосу</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>В слоте <code>Scaffold</code> делает три вещи разом: резервирует место в
+        <code>innerPadding</code>, поднимает над кнопкой снекбар и учитывает системные отступы снизу. В
+        <code>Box</code> все это теряется.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Scaffold(
+    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+    floatingActionButton = {
+        FloatingActionButton(onClick = onAdd) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Добавить")
+        }
+    }
+) { innerPadding -&gt;
+    AddressList(addresses = state.addresses, contentPadding = innerPadding)
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Все, для чего у <code>Scaffold</code> есть слот, кладется в
+        слот, а не в содержимое.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Снекбар не показывается вообще</h3>
+        <p class="task">Сохранение настроек: после успеха показать подтверждение.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Scaffold(
+    snackbarHost = { SnackbarHost(hostState = SnackbarHostState()) }   // новый объект каждый прогон
+) { innerPadding -&gt;
+    SettingsContent(
+        onSave = { scope.launch { snackbarHostState.showSnackbar("Сохранено") } },
+        modifier = Modifier.padding(innerPadding)
+    )
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Настройки сохраняются, запрос уходит</li>
+          <li class="hit">Подтверждение не появляется никогда</li>
+          <li class="hit">Иногда мелькает и мгновенно пропадает</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Состояние хоста создается заново на каждом прогоне: то, чему отдали сообщение, и то, что
+        сейчас на экране, — разные объекты. Классическая ошибка «состояние без
+        <code>remember</code>».</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val snackbarHostState = remember { SnackbarHostState() }
+
+Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { … }</code></pre>
+        <p>Вторая половина той же темы — показ снекбара по состоянию ошибки без гашения события:
+        сообщение повторяется после поворота. Разбор в статье про
+        <a href="side-effects.html">сайд-эффекты</a>, кейс 6.</p>
+
+        <div class="rule"><b>Правило</b><code>SnackbarHostState</code> — всегда через
+        <code>remember</code> и всегда снаружи слота.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Поле ввода подпрыгивает выше клавиатуры</h3>
+        <p class="task">Экран чата с компанией: поле ввода внизу должно подниматься над клавиатурой.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Scaffold(
+    contentWindowInsets = ScaffoldDefaults.contentWindowInsets.add(WindowInsets.ime)
+) { innerPadding -&gt;
+    Column(
+        modifier = Modifier
+            .padding(innerPadding)
+            .imePadding()                    // клавиатура учтена второй раз
+    ) {
+        MessagesList(messages = state.messages, modifier = Modifier.weight(1f))
+        MessageInput(onSend = onSend)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Открыл клавиатуру</li>
+          <li class="hit">Поле ввода подскочило на высоту клавиатуры сверх нее — между ними пустая
+          полоса в пол-экрана</li>
+          <li class="hit">Часть переписки уехала за верхний край</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Один и тот же отступ применен снаружи и внутри. Правило общее для всех insets: если
+        родитель уже учел полосу, потомок не должен учитывать ее повторно — а узнать об этом потомок
+        может только через <code>consumeWindowInsets</code> (раздел 04).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Scaffold { innerPadding -&gt;                 // insets по умолчанию, клавиатура не в них
+    Column(
+        modifier = Modifier
+            .padding(innerPadding)
+            .consumeWindowInsets(innerPadding)
+            .imePadding()                  // единственное место, где учитывается клавиатура
+    ) { … }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Каждая системная полоса учитывается ровно один раз. Двойной
+        зазор — всегда «применили дважды», а не «применили не там».</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Лишний Surface поверх фона</h3>
+        <p class="task">Экран настроек: фон должен быть чуть светлее обычного.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Scaffold(topBar = { TopAppBar(title = { Text(text = "Настройки") }) }) { innerPadding -&gt;
+    Surface(                                        // второй Surface поверх фона Scaffold
+        modifier = Modifier.fillMaxSize().padding(innerPadding),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest
+    ) {
+        SettingsList(items = state.items)
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видно на экране</div>
+        <ul class="story">
+          <li>Фон выглядит правильно</li>
+          <li class="hit">Под топбаром и над нижней панелью просвечивает старый цвет
+          <code>background</code> — экран будто в рамке</li>
+          <li class="hit">Лишний слой в иерархии, а в темной теме еще и сложение тональных высот</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>Scaffold</code> внутри уже <code>Surface</code> на весь экран (раздел 08). Второй
+        накрывает только область содержимого, поэтому в зонах слотов остается прежний цвет.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Scaffold(
+    topBar = { TopAppBar(title = { Text(text = "Настройки") }) },
+    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+) { innerPadding -&gt;
+    SettingsList(items = state.items, contentPadding = innerPadding)
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Фон экрана задается параметром <code>containerColor</code>, а
+        не оберткой. Подробнее про слои — в статье про <a href="surface.html">Surface</a>.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видно</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Контент под топбаром или панелью</td><td><code>innerPadding</code> не применен</td><td class="num">1</td></tr>
+        <tr><td>Список обрезан по кромке бара</td><td><code>padding</code> вместо <code>contentPadding</code></td><td class="num">2</td></tr>
+        <tr><td>Двойной зазор сверху и снизу</td><td>вложенные Scaffold</td><td class="num">3</td></tr>
+        <tr><td>Топбар не сворачивается</td><td>нет <code>nestedScroll</code></td><td class="num">4</td></tr>
+        <tr><td>Снекбар под кнопкой, последний элемент недоступен</td><td>FAB в содержимом</td><td class="num">5</td></tr>
+        <tr><td>Снекбар не появляется</td><td><code>SnackbarHostState</code> без <code>remember</code></td><td class="num">6</td></tr>
+        <tr><td>Контент подпрыгивает над клавиатурой</td><td>клавиатура учтена дважды</td><td class="num">7</td></tr>
+        <tr><td>Полосы чужого цвета у краев экрана</td><td>лишний <code>Surface</code> поверх фона</td><td class="num">8</td></tr>
+      </table>
+      </div>
+
+      <div class="note ok">
+        <span class="tag">Итог</span>
+        <p><code>Scaffold</code> берет на себя размещение баров, снекбара и кнопки действия и считает,
+        сколько места они заняли. Все, что он просит взамен, — применить <code>innerPadding</code>:
+        колонке через <code>Modifier.padding</code>, списку через <code>contentPadding</code>. Ошибки
+        этой темы почти все сводятся к одному из двух: отступ не применили или применили дважды.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>11.09.2026 · Соседние статьи: <a href="surface.html">Surface</a> · <a href="side-effects.html">сайд-эффекты</a></footer>
+</div>
+</body>
+</html>

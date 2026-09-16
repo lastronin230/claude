@@ -1,0 +1,1659 @@
+<!doctype html>
+<!-- Скелет html-страницы проекта. Единственное оформление: палитра совпадает с профилем
+     терминала Warm Light. Копируешь целиком, заменяешь {{...}}, наполняешь <main>,
+     неиспользованные блоки удаляешь. Своих css-правил не дописывать — см. skills/html-page.
+     Блок .copybar и <pre hidden> нужны только там, где страницу копируют в трекер (задачи). -->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Поля ввода: механика и восемь кейсов</title>
+<style>
+  :root{
+    --bg:#FBF8EE; --panel:#FFFFFF; --ink:#3C3836; --muted:#6F675E; --line:#EBE3D2;
+    --code:#F5F0E2;
+    --red:#9E3626;    --red-bg:#F8E9E3;
+    --green:#276E36;  --green-bg:#E9F2E5;
+    --yellow:#7E5A11; --yellow-bg:#F7EED8;
+    --blue:#1B537D;   --blue-bg:#E4EDF4;
+    --magenta:#7E3790;--magenta-bg:#F1E7F3;
+    --cyan:#12656E;   --cyan-bg:#E3F0EF;
+    --mono:"JetBrains Mono","SF Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 96px}
+  .prose{max-width:68ch}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:10px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.015em}
+  .lede,.sub{color:var(--muted);font-size:15px;max-width:68ch;margin:0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+     margin:52px 0 6px;font-weight:600}
+  h2 .num{font-variant-numeric:tabular-nums;color:var(--cyan);margin-right:8px}
+  h3{font-size:17px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 12px}
+  ul,ol{padding-left:22px;margin:0 0 12px}
+  li{margin-bottom:4px}
+  .why{color:var(--muted);font-size:14.5px;max-width:68ch;margin:6px 0 14px}
+  .why b{color:var(--ink);font-weight:600}
+
+  code{font-family:var(--mono);font-size:.88em;background:var(--code);padding:1px 5px;border-radius:4px}
+  a.src{font-family:var(--mono);font-size:.85em;color:var(--muted);
+        text-decoration:underline dotted var(--line);text-underline-offset:3px}
+
+  pre{font-family:var(--mono);font-size:13.5px;line-height:1.5;background:var(--code);
+      margin:0 0 14px;padding:12px 14px;border-radius:0 8px 8px 0;
+      border-left:3px solid var(--cyan);overflow-x:auto}
+  pre code{background:none;padding:0;font-size:inherit}
+  pre.ascii{line-height:1.45;background:var(--panel);border:1px solid var(--line);
+            border-left:3px solid var(--muted);border-radius:0 8px 8px 0}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:15px}
+  th{text-align:left;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--muted);padding:0 12px 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child,th:first-child{padding-left:0}
+  td.was{color:var(--muted)}
+  td.now{border-left:2px solid var(--green);background:var(--green-bg)}
+  th.now{color:var(--green);border-bottom-color:var(--green)}
+  td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.mono,th.mono{font-family:var(--mono);font-size:13.5px}
+
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 20px;
+        margin:16px 0 8px;font-size:14px}
+  .meta .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--yellow);
+        border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 16px;max-width:68ch}
+  .note.strict{border-left-color:var(--red)}
+  .note.ok{border-left-color:var(--green)}
+  .note .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+             color:var(--yellow);display:block;margin-bottom:4px}
+  .note.strict .tag{color:var(--red)}
+  .note.ok .tag{color:var(--green)}
+  .note p{margin:0}
+
+  ol.cards{list-style:none;margin:0 0 16px;padding:0;counter-reset:c}
+  ol.cards li{counter-increment:c;background:var(--panel);border:1px solid var(--line);
+    border-left-width:3px;border-radius:0 10px 10px 0;padding:13px 16px 14px;margin-bottom:8px}
+  ol.cards li[data-s="r"]{border-left-color:var(--red)}
+  ol.cards li[data-s="y"]{border-left-color:var(--yellow)}
+  ol.cards li[data-s="g"]{border-left-color:var(--green)}
+  ol.cards li[data-s="n"]{border-left-color:var(--line)}
+  ol.cards li .head{font-weight:600;margin-bottom:4px}
+  ol.cards li .head::before{content:counter(c) ". ";font-family:var(--mono);
+    font-size:.85em;color:var(--muted);font-weight:400}
+
+  .diff{font-family:var(--mono);font-size:13.5px;line-height:1.6;background:var(--code);
+        border-radius:8px;padding:10px 0;margin:0 0 16px;overflow-x:auto}
+  .diff div{padding:0 14px 0 8px;white-space:pre}
+  .diff .add{background:#E2F0DA;box-shadow:inset 3px 0 var(--green)}
+  .diff .del{background:#F8E3DA;box-shadow:inset 3px 0 var(--red)}
+  .diff .sign{display:inline-block;width:16px;color:var(--muted);user-select:none;font-weight:700}
+  .diff .add .sign{color:var(--green)}
+  .diff .del .sign{color:var(--red)}
+  .diff mark{background:#BFDDB2;color:var(--green);border-radius:3px;padding:0 2px;font-weight:600}
+  .diff .del mark{background:#EFC7B7;color:var(--red)}
+
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+       padding:16px;margin:0 0 16px;overflow-x:auto}
+  .mock .gone{background:var(--red-bg);color:var(--red);border-radius:3px}
+  .mock .came{background:var(--green-bg);color:var(--green);border-radius:3px}
+
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:20px;
+        border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+  .chip.r{color:var(--red);background:var(--red-bg)}
+  .chip.g{color:var(--green);background:var(--green-bg)}
+  .chip.b{color:var(--blue);background:var(--blue-bg)}
+
+  dl.xp{display:grid;grid-template-columns:minmax(90px,120px) 1fr;gap:2px 16px;margin:8px 0}
+  dl.xp dt{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:6px 0}
+  dl.xp dd{margin:0;padding:6px 0}
+  .warn{color:var(--yellow);font-weight:600}
+
+  dl.defs{display:grid;grid-template-columns:minmax(140px,220px) 1fr;gap:2px 20px;margin:0 0 16px}
+  dl.defs dt{font-family:var(--mono);font-size:13.5px;color:var(--cyan);padding:8px 0;
+             border-top:1px solid var(--line)}
+  dl.defs dd{margin:0;padding:8px 0;border-top:1px solid var(--line)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0 0 16px;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding:2px 0 12px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;font-family:var(--mono);
+    font-size:12px;color:var(--muted);width:22px;height:22px;line-height:22px;text-align:center;
+    border:1px solid var(--line);border-radius:50%;background:var(--panel)}
+
+  /* Индексная страница: список ссылок на другие страницы каталога. Кликабельна вся строка,
+     а не только заголовок — по списку ходят мышью, попадать в текст ссылки незачем. */
+  ul.index{list-style:none;margin:0 0 16px;padding:0;border-top:1px solid var(--line)}
+  ul.index li{border-bottom:1px solid var(--line)}
+  ul.index a{display:block;padding:11px 14px;text-decoration:none;color:inherit;
+             border-left:3px solid transparent}
+  ul.index a:hover{background:var(--panel);border-left-color:var(--cyan)}
+  ul.index .top{display:flex;gap:12px;align-items:baseline;margin-bottom:2px;
+                font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  ul.index .id{color:var(--cyan)}
+  ul.index .date{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  ul.index .name{font-size:16px;color:var(--ink)}
+
+  /* Разбор кейса: задача → как пишут → что видит пользователь → почему → как надо → правило.
+     Для обучающих страниц, где ошибка показывается вместе с последствием. Метка .lbl красит
+     только свою подпись, код под ней — pre.bad / pre.good. */
+  section.case{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 6px;margin:0 0 22px}
+  section.case h3{margin:0 0 4px;font-size:18px}
+  section.case .task{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:68ch}
+  section.case pre{margin-bottom:12px}
+  section.case p{max-width:68ch}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+  .lbl::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--muted)}
+  .lbl.bad{color:var(--red)}    .lbl.bad::before{background:var(--red)}
+  .lbl.good{color:var(--green)} .lbl.good::before{background:var(--green)}
+  .lbl.see{color:var(--blue)}   .lbl.see::before{background:var(--blue)}
+  .lbl.why{color:var(--magenta)}.lbl.why::before{background:var(--magenta)}
+  pre.bad{border-left-color:var(--red)}
+  pre.good{border-left-color:var(--green)}
+  /* Имя файла над блоком кода — чтобы было видно, куда этот код кладется */
+  .filename{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+    margin:0 0 4px}
+  /* Сценарий глазами пользователя: последний пункт — то, что сломалось */
+  .story{list-style:none;padding:0;margin:0 0 12px;max-width:68ch}
+  .story li{padding:5px 0 5px 26px;position:relative;border-bottom:1px dotted var(--line)}
+  .story li::before{content:"→";position:absolute;left:4px;color:var(--muted)}
+  .story li:last-child{border-bottom:none}
+  .story li.hit{color:var(--red);font-weight:600}
+  .story li.hit::before{content:"✕";color:var(--red)}
+  /* Вывод кейса одной строкой */
+  .rule{border-top:1px solid var(--line);margin:14px -20px 0;padding:12px 20px 14px;font-size:14.5px}
+  .rule b{color:var(--cyan);font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    text-transform:uppercase;display:block;margin-bottom:3px;font-weight:600}
+  /* Разделитель крупных частей страницы: «Часть I. Механика», «Часть II. Кейсы» */
+  .part{margin:64px 0 8px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);border-radius:0 10px 10px 0}
+  .part .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);display:block;margin-bottom:3px}
+  .part h2{margin:0;text-transform:none;letter-spacing:-.01em;font-size:20px;color:var(--ink)}
+  .part p{margin:6px 0 0;color:var(--muted);font-size:14.5px;max-width:68ch}
+
+  /* Кнопки «скопировать в трекер». Две разные: заголовок — светлая, описание — заливкой.
+     Метка H1 / MD перед подписью, чтобы не путать на ощупь. */
+  .copybar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;align-items:center}
+  .copybar button{font:inherit;font-size:13.5px;padding:6px 13px;border-radius:7px;cursor:pointer;
+    display:inline-flex;align-items:center;
+    background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+  .copybar button::before{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    padding:2px 5px;border-radius:4px;margin-right:8px;background:var(--code);color:var(--muted)}
+  .copybar button[data-copy="md-title"]::before{content:"H1"}
+  .copybar button[data-copy="md-title"]:hover{border-color:var(--muted)}
+  .copybar button[data-copy="md-body"]{background:var(--cyan-bg);color:var(--cyan);border-color:var(--cyan)}
+  .copybar button[data-copy="md-body"]::before{content:"MD";background:#FFFFFF;color:var(--cyan)}
+  .copybar button[data-copy="md-body"]:hover{background:#D6E8E7}
+  .copybar button:active{transform:translateY(1px)}
+  .copybar button[data-done]{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+  .copybar button[data-done]::before{background:#fff;color:var(--green)}
+  .copybar button:disabled{cursor:default}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:13px}
+
+  .layout{display:grid;grid-template-columns:1fr}
+  nav.toc{display:none}
+  @media (min-width:1100px){
+    .layout{grid-template-columns:1fr 190px;gap:44px}
+    nav.toc{display:block;position:sticky;top:40px;align-self:start;font-size:13.5px;
+            line-height:1.9;border-left:1px solid var(--line);padding-left:16px;order:2}
+    nav.toc a{display:block;color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--ink)}
+    main{order:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Поля ввода: механика и восемь кейсов</h1>
+    <p class="sub">Первая половина — как устроен TextField, почему он ничего не хранит сам, что делает клавиатура и фокус. Вторая — восемь экранов, где ввод ломается: как пишут, что видит пользователь, почему и как надо.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <a href="#p1"><b>Часть I. Механика</b></a>
+      <a href="#t1">01 Три компонента</a>
+      <a href="#t2">02 Поле ничего не хранит</a>
+      <a href="#t3">03 Состояние и курсор</a>
+      <a href="#t4">04 Клавиатура</a>
+      <a href="#t5">05 Фокус</a>
+      <a href="#t6">06 Маски и фильтрация</a>
+      <a href="#t7">07 Ошибки и подписи</a>
+      <a href="#t8">08 Дерево решений</a>
+      <a href="#p2"><b>Часть II. Кейсы</b></a>
+      <a href="#c1">1 Поле не печатает</a>
+      <a href="#c2">2 Курсор прыгает</a>
+      <a href="#c3">3 Текст и поворот</a>
+      <a href="#c4">4 Клавиатура закрыла</a>
+      <a href="#c5">5 Ошибка с первой буквы</a>
+      <a href="#c6">6 Не та клавиатура</a>
+      <a href="#c7">7 Автофокус молчит</a>
+      <a href="#c8">8 Ввод тормозит</a>
+      <a href="#c9">9 Фокус на ошибку</a>
+      <a href="#ref">Справочник</a>
+    </nav>
+    <main>
+
+      <div class="chips">
+        <span class="chip b">Material 3</span>
+        <span class="chip">androidx.compose.material3</span>
+        <span class="chip">TextField</span>
+      </div>
+
+      <div class="part" id="p1">
+        <span class="k">Часть I</span>
+        <h2>Механика: как устроено поле ввода</h2>
+        <p>Восемь разделов подряд. К концу будет понятно, почему поле не печатает само, что происходит
+        с курсором при форматировании и кто отвечает за клавиатуру и фокус.</p>
+      </div>
+
+      <h2 id="t1"><span class="num">01</span> Три компонента</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Компонент</th><th>Что дает</th><th>Когда</th></tr>
+        <tr><td class="mono">TextField</td><td>заливка, подчеркивание снизу, label, ошибка, подпись</td>
+            <td>дефолт для форм внутри экрана</td></tr>
+        <tr><td class="mono">OutlinedTextField</td><td>то же, но рамка по контуру</td>
+            <td>когда поле на цветном фоне или форм много подряд</td></tr>
+        <tr><td class="mono">BasicTextField</td><td>только ввод текста, без оформления вообще</td>
+            <td>поиск в топбаре, поле кода из SMS, чат, своя дизайн-система</td></tr>
+      </table>
+      </div>
+
+      <p class="prose">Первые два — это <code>BasicTextField</code> плюс <b>decoration box</b>: слой,
+      который рисует рамку, подпись, иконки и ошибку. Отсюда практический вывод: если из готового поля
+      нужно убрать половину оформления, брать надо не его, а <code>BasicTextField</code> и собирать
+      свое.</p>
+
+      <pre class="ascii"><code>OutlinedTextField
+├─ decorationBox        рамка, label, placeholder, leading/trailing, supportingText, isError
+└─ BasicTextField       собственно ввод: текст, курсор, выделение, клавиатура</code></pre>
+
+      <h2 id="t2"><span class="num">02</span> Поле ничего не хранит само</h2>
+
+      <p class="prose">Главное отличие от <code>EditText</code>: у поля в Compose нет внутреннего
+      текста. Оно <b>показывает</b> то, что ему передали в <code>value</code>, и <b>сообщает</b> о
+      попытке ввода через <code>onValueChange</code>. Замкнуть круг обязан ты.</p>
+
+      <pre class="ascii"><code>пользователь нажал букву
+        │
+        ▼
+  onValueChange("А")  →  твое состояние обновилось
+        │                        │
+        │                        ▼
+        └────────────  value = "А"  →  поле перерисовалось с новым текстом
+
+разомкни эту петлю в любом месте — поле перестанет печатать</code></pre>
+
+<pre class="good"><code>var name by rememberSaveable { mutableStateOf("") }
+
+OutlinedTextField(
+    value = name,
+    onValueChange = { name = it },
+    label = { Text(text = "Имя") },
+    singleLine = true,
+    modifier = Modifier.fillMaxWidth()
+)</code></pre>
+
+      <p class="why">Это то же правило, что и у любого состояния: <code>remember</code> хранит,
+      <code>mutableStateOf</code> уведомляет. Поле ввода просто делает нарушение заметным сразу —
+      кейс 1.</p>
+
+      <h2 id="t3"><span class="num">03</span> Состояние и курсор: три уровня API</h2>
+
+      <p class="prose">Строки хватает, пока текст меняет только пользователь. Как только текст
+      правится программно — маска, фильтр, автоподстановка кода из SMS, — выясняется, что кроме
+      текста есть еще <b>позиция курсора</b> и <b>выделение</b>, и кто-то должен ими управлять.</p>
+
+      <p class="prose">Разберем на одной задаче: <b>поле кода из SMS</b>. Четыре цифры, буквы вводить
+      нельзя, код может прийти автоматически и подставиться сам.</p>
+
+      <h3>Уровень 1: String — текста достаточно</h3>
+
+<pre class="good"><code>@Composable
+fun CodeFieldSimple() {
+    var code by rememberSaveable { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = code,
+        onValueChange = { input -&gt;
+            code = input.filter { it.isDigit() }.take(CODE_LENGTH)
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+    )
+}</code></pre>
+
+      <p class="prose">Пока пользователь просто печатает, все работает: он дописывает символы в конец,
+      и курсор там же. Но фильтр уже показывает трещину — попробуй вставить в середину лишнюю букву:</p>
+
+      <pre class="ascii"><code>было:    12|34          курсор после второго символа
+вставили «a»:  12a34    onValueChange получил "12a34"
+фильтр вернул: 1234     строка та же, что была до вставки
+поле видит:    1234     длина не изменилась, но это ДРУГОЙ объект
+
+куда ставить курсор — поле не знает. Ставит в конец: 1234|</code></pre>
+
+      <p class="why">В <code>String</code> позиции курсора нет в принципе. Поле восстанавливает ее
+      эвристикой, и любая программная правка эту эвристику ломает — отсюда кейс 2.</p>
+
+      <h3>Уровень 2: TextFieldValue — текст плюс курсор</h3>
+
+      <p class="prose">Теперь добавим автоподстановку: код пришел из SMS, его надо вставить в поле.</p>
+
+<pre class="bad"><code>// со String: текст подставился, а курсор оказался перед ним
+LaunchedEffect(smsCode) {
+    if (smsCode != null) code = smsCode      // курсор: |1234
+}</code></pre>
+
+<pre class="good"><code>@Composable
+fun CodeFieldWithValue(smsCode: String?) {
+    var field by remember { mutableStateOf(TextFieldValue(text = "")) }
+
+    LaunchedEffect(smsCode) {
+        if (smsCode != null) {
+            field = TextFieldValue(
+                text = smsCode,
+                selection = TextRange(smsCode.length)      // курсор ставим сами — в конец
+            )
+        }
+    }
+
+    OutlinedTextField(
+        value = field,
+        onValueChange = { new -&gt;
+            val digits = new.text.filter { it.isDigit() }.take(CODE_LENGTH)
+            field = new.copy(
+                text = digits,
+                selection = TextRange(digits.length.coerceAtMost(new.selection.end))
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+    )
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Поле TextFieldValue</th><th>Что означает</th></tr>
+        <tr><td class="mono">text</td><td>сам текст</td></tr>
+        <tr><td class="mono">selection: TextRange</td>
+            <td>курсор, если <code>start == end</code>; иначе выделенный кусок</td></tr>
+        <tr><td class="mono">composition</td>
+            <td>кусок, который сейчас набирает клавиатура (T9, подсказки) — трогать не нужно</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Частые значения: <code>TextRange(0)</code> — курсор в начало,
+      <code>TextRange(text.length)</code> — в конец, <code>TextRange(0, text.length)</code> — выделить
+      все (удобно, когда поле открывается с предзаполненным значением, которое пользователь скорее
+      заменит целиком, чем отредактирует).</p>
+
+      <div class="note strict">
+        <span class="tag">Ошибка 1: rememberSaveable без Saver</span>
+        <p><code>rememberSaveable</code> кладет значение в <code>Bundle</code>, а по умолчанию умеет
+        только то, что <code>Bundle</code> принимает: примитивы, <code>String</code>,
+        <code>Parcelable</code>. <code>TextFieldValue</code> в этот список не входит, и приложение
+        падает при первом же сохранении состояния: <i>«cannot be saved using the current
+        SaveableStateRegistry»</i>. Saver для него уже написан, его нужно передать.</p>
+      </div>
+
+<pre class="bad"><code>var field by rememberSaveable { mutableStateOf(TextFieldValue("")) }   // упадет</code></pre>
+
+<pre class="good"><code>var field by rememberSaveable(stateSaver = TextFieldValue.Saver) {     // сохранит текст и курсор
+    mutableStateOf(TextFieldValue(""))
+}</code></pre>
+
+      <p class="why">Параметр именно <code>stateSaver</code>, а не <code>saver</code>: сохраняется
+      <code>MutableState&lt;TextFieldValue&gt;</code>, а не голое значение. Для <code>String</code>
+      saver не нужен вовсе, а <code>rememberTextFieldState()</code> сохраняет себя сам.</p>
+
+      <div class="note strict">
+        <span class="tag">Ошибка 2: пересоздание значения целиком</span>
+        <p>В <code>onValueChange</code> нельзя собирать <code>TextFieldValue</code> заново из одного
+        текста: поле <code>selection</code> при этом сбрасывается в ноль, и курсор прыгает в начало на
+        каждом введенном символе.</p>
+      </div>
+
+<pre class="bad"><code>field = TextFieldValue(digits)                      // selection потерян</code></pre>
+
+<pre class="good"><code>field = new.copy(text = digits)                     // остальные поля сохранены</code></pre>
+
+      <h3>Уровень 3: TextFieldState — состояние живет в объекте поля</h3>
+
+      <p class="prose">Проблема второго уровня видна в коде выше: каждое нажатие проходит полный круг
+      «поле отдало значение → я его поправил → вернул обратно». Между этими шагами может прийти новое
+      событие, и тогда правки накладываются друг на друга — отсюда пропадающие символы при быстром
+      наборе.</p>
+
+      <p class="prose">Новый API убирает круг: состояние принадлежит полю, а ты описываешь
+      <b>правила</b>, по которым ввод принимается.</p>
+
+<pre class="good"><code>@Composable
+fun CodeFieldWithState(smsCode: String?) {
+    val state = rememberTextFieldState()                 // текст + курсор внутри объекта
+
+    LaunchedEffect(smsCode) {
+        if (smsCode != null) {
+            state.setTextAndPlaceCursorAtEnd(smsCode)    // подстановка одной строкой
+        }
+    }
+
+    BasicTextField(
+        state = state,                                   // ни value, ни onValueChange
+        inputTransformation = DigitsOnly(maxLength = CODE_LENGTH),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+    )
+}
+
+private class DigitsOnly(private val maxLength: Int) : InputTransformation {
+    override fun TextFieldBuffer.transformInput() {
+        if (!asCharSequence().all(Char::isDigit)) revertAllChanges()   // ввод отклонен целиком
+        if (length &gt; maxLength) revertAllChanges()
+    }
+}</code></pre>
+
+      <p class="prose">Читается состояние как <code>state.text</code>, правится через
+      <code>state.edit { }</code>:</p>
+
+<pre><code>val code: String = state.text.toString()
+
+state.edit {
+    replace(0, length, "0000")
+    placeCursorAtEnd()
+}</code></pre>
+
+      <div class="note">
+        <span class="tag">Про версии</span>
+        <p><code>TextFieldState</code> пришел сначала в <code>BasicTextField</code>
+        (<code>foundation</code>), затем перегрузки со <code>state</code> появились у
+        <code>TextField</code> и <code>OutlinedTextField</code> в <code>material3</code>. Имена
+        методов трансформаций между версиями менялись — сверяйся с той, что стоит в
+        <code>libs.versions.toml</code>, а не с первой попавшейся статьей.</p>
+      </div>
+
+      <h3>Что выбрать</h3>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Уровень</th><th>Берем, когда</th><th>Цена</th></tr>
+        <tr><td class="mono">String</td>
+            <td>обычная форма: имя, адрес, комментарий. Текст меняет только пользователь</td>
+            <td>Программная правка роняет курсор</td></tr>
+        <tr><td class="mono">TextFieldValue</td>
+            <td>нужна подстановка текста, выделение «все», управление курсором</td>
+            <td>Курсор ведешь сам в каждой ветке <code>onValueChange</code></td></tr>
+        <tr><td class="mono">TextFieldState</td>
+            <td>новый код: фильтрация ввода, маски, быстрый набор</td>
+            <td>Требует свежей версии и другого мышления: правила вместо обработчика</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Практический ориентир: <b>по умолчанию <code>String</code></b>. Как только
+      появляется строка вида <code>value = чтоТоИзменилось(state)</code> или подстановка текста
+      извне — это сигнал переходить на уровень выше, а не подпирать эвристику поля.</p>
+
+      <h2 id="t4"><span class="num">04</span> Клавиатура</h2>
+
+      <p class="prose">Какая клавиатура откроется и что будет на ее кнопке действия — это
+      <code>KeyboardOptions</code>, а не догадки системы.</p>
+
+<pre class="good"><code>OutlinedTextField(
+    value = phone,
+    onValueChange = { phone = it },
+    label = { Text(text = "Телефон") },
+    singleLine = true,
+    keyboardOptions = KeyboardOptions(
+        keyboardType = KeyboardType.Phone,          // цифровая клавиатура
+        imeAction = ImeAction.Next                  // кнопка «дальше» вместо «ввод»
+    ),
+    keyboardActions = KeyboardActions(
+        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+    )
+)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Поле</th><th>keyboardType</th><th>imeAction</th></tr>
+        <tr><td>Телефон</td><td class="mono">Phone</td><td class="mono">Next</td></tr>
+        <tr><td>Почта</td><td class="mono">Email</td><td class="mono">Next</td></tr>
+        <tr><td>Пароль</td><td class="mono">Password</td><td class="mono">Done</td></tr>
+        <tr><td>Код из SMS</td><td class="mono">NumberPassword</td><td class="mono">Done</td></tr>
+        <tr><td>Сумма</td><td class="mono">Decimal</td><td class="mono">Done</td></tr>
+        <tr><td>Последнее поле формы</td><td>—</td><td class="mono">Done</td></tr>
+      </table>
+      </div>
+
+      <p class="why">У пароля кроме клавиатуры нужен <code>visualTransformation =
+      PasswordVisualTransformation()</code> — он скрывает символы точками, не трогая само значение.</p>
+
+      <h2 id="t5"><span class="num">05</span> Фокус</h2>
+
+      <p class="prose">Фокус — это ответ на вопрос «куда попадет следующий символ». В XML им управлял
+      сам <code>EditText</code> через <code>requestFocus()</code> и <code>nextFocusDown</code>. В
+      Compose тем же занимаются четыре инструмента, и каждый отвечает за свою половину задачи.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Инструмент</th><th>Задача</th><th>Откуда берется</th></tr>
+        <tr><td class="mono">FocusRequester</td><td>поставить фокус в конкретное поле программно</td>
+            <td><code>remember { FocusRequester() }</code></td></tr>
+        <tr><td class="mono">LocalFocusManager</td><td>перевести фокус дальше или снять совсем</td>
+            <td><code>LocalFocusManager.current</code></td></tr>
+        <tr><td class="mono">Modifier.onFocusChanged</td><td>узнать, что поле получило или потеряло фокус</td>
+            <td>модификатор на поле</td></tr>
+        <tr><td class="mono">LocalSoftwareKeyboardController</td><td>показать или скрыть клавиатуру</td>
+            <td><code>.current</code>, nullable</td></tr>
+      </table>
+      </div>
+
+      <h3>Пример 1: автофокус при открытии экрана</h3>
+
+<pre class="good"><code>@Composable
+fun CodeScreen(viewModel: CodeViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()      // фокус — после того, как поле попало в дерево
+        keyboard?.show()                   // на части устройств клавиатура сама не открывается
+    }
+
+    OutlinedTextField(
+        value = state.code,
+        onValueChange = viewModel::onCodeChange,
+        modifier = Modifier.focusRequester(focusRequester),   // связь: реквестер ↔ поле
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.NumberPassword,
+            imeAction = ImeAction.Done
+        )
+    )
+}</code></pre>
+
+      <p class="why">Две строчки связаны: <code>FocusRequester</code> ничего не делает сам по себе,
+      пока он не привязан модификатором <code>focusRequester(…)</code> к конкретному полю. Забыли
+      модификатор — падение <code>IllegalStateException: FocusRequester is not initialized</code>, то
+      же самое сообщение, что и при вызове из тела composable (кейс 7).</p>
+
+      <h3>Пример 2: переход между полями формы</h3>
+
+      <p class="prose">Кнопка на клавиатуре должна вести к следующему полю, а на последнем — отправлять
+      форму. Это две настройки: <code>imeAction</code> говорит, что нарисовать на кнопке,
+      <code>keyboardActions</code> — что при нажатии сделать.</p>
+
+<pre class="good"><code>@Composable
+fun DeliveryForm(state: DeliveryUiState, viewModel: DeliveryViewModel) {
+    val focusManager = LocalFocusManager.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = state.street,
+            onValueChange = viewModel::onStreetChange,
+            label = { Text(text = "Улица") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
+        )
+
+        OutlinedTextField(
+            value = state.house,
+            onValueChange = viewModel::onHouseChange,
+            label = { Text(text = "Дом") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
+        )
+
+        OutlinedTextField(
+            value = state.comment,
+            onValueChange = viewModel::onCommentChange,
+            label = { Text(text = "Комментарий курьеру") },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    focusManager.clearFocus()      // фокус снят, клавиатура закрылась
+                    viewModel.submit()
+                }
+            )
+        )
+    }
+}</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Вызов</th><th>Что делает</th></tr>
+        <tr><td class="mono">moveFocus(FocusDirection.Down)</td><td>следующее поле по порядку в дереве</td></tr>
+        <tr><td class="mono">moveFocus(FocusDirection.Next)</td><td>то же, но с учетом направления письма (RTL)</td></tr>
+        <tr><td class="mono">clearFocus()</td><td>снять фокус со всех полей; клавиатура закрывается сама</td></tr>
+        <tr><td class="mono">clearFocus(force = true)</td><td>снять даже у поля, которое фокус удерживает</td></tr>
+      </table>
+      </div>
+
+      <p class="why"><code>clearFocus()</code> обычно достаточно, чтобы клавиатура ушла: она скрывается
+      вслед за потерей фокуса. <code>keyboard?.hide()</code> отдельно нужен в редком случае — когда
+      клавиатуру надо убрать, а фокус в поле оставить.</p>
+
+      <h3>Пример 3: реакция на получение и потерю фокуса</h3>
+
+      <p class="prose">Два типовых сценария. Первый — валидация на выходе из поля вместо проверки на
+      каждый символ (кейс 5). Второй — выделить весь текст при входе, чтобы предзаполненное значение
+      можно было заменить одним нажатием.</p>
+
+<pre class="good"><code>var field by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+    mutableStateOf(TextFieldValue(text = state.savedAmount))
+}
+var wasFocused by rememberSaveable { mutableStateOf(false) }
+
+OutlinedTextField(
+    value = field,
+    onValueChange = { field = it },
+    label = { Text(text = "Сумма") },
+    isError = state.amountError != null,
+    modifier = Modifier.onFocusChanged { focusState -&gt;
+        if (focusState.isFocused) {
+            wasFocused = true
+            field = field.copy(selection = TextRange(0, field.text.length))   // выделили все
+        } else if (wasFocused) {
+            viewModel.validateAmount(field.text)                             // проверка на выходе
+        }
+    }
+)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Поле FocusState</th><th>Что означает</th></tr>
+        <tr><td class="mono">isFocused</td><td>фокус именно на этом элементе</td></tr>
+        <tr><td class="mono">hasFocus</td><td>фокус на нем или на любом его потомке — для контейнеров</td></tr>
+        <tr><td class="mono">isCaptured</td><td>элемент удерживает фокус и не отдает его по обычному переходу</td></tr>
+      </table>
+      </div>
+
+      <h3>Пример 4: снять фокус тапом по пустому месту</h3>
+
+      <p class="prose">На экране с формой пользователь ожидает, что тап вне полей закроет клавиатуру.
+      Само это не происходит: поле не теряет фокус, пока фокус не забрали.</p>
+
+<pre class="good"><code>val focusManager = LocalFocusManager.current
+
+Column(
+    modifier = Modifier
+        .fillMaxSize()
+        .pointerInput(Unit) {
+            detectTapGestures(onTap = { focusManager.clearFocus() })
+        }
+) { … }</code></pre>
+
+      <p class="why">Именно <code>pointerInput</code>, а не <code>clickable</code>: последний добавит
+      контейнеру ripple на весь экран и роль кнопки для скринридера — экран начнет читаться как одна
+      большая кнопка.</p>
+
+      <div class="note strict">
+        <span class="tag">Фокус и списки</span>
+        <p>Поле внутри <code>LazyColumn</code> теряет фокус, когда уезжает за пределы экрана: элемент
+        уходит из композиции вместе со всем своим состоянием. Если форма длинная и поля должны
+        переживать прокрутку — это повод либо не делать ее лениво (<code>Column</code> с
+        <code>verticalScroll</code>), либо держать значения во ViewModel.</p>
+      </div>
+
+      <h2 id="t6"><span class="num">06</span> Маски и фильтрация</h2>
+
+      <p class="prose">Две разные задачи, которые постоянно смешивают в одну. Разница в том, что
+      именно меняется — <b>значение</b> или только <b>картинка</b>.</p>
+
+      <div class="scroll">
+      <table>
+        <tr><th></th><th>Фильтрация</th><th>Маска</th></tr>
+        <tr><td>Что меняет</td><td>само значение в состоянии</td><td>только отображение</td></tr>
+        <tr><td>Пример</td><td>оставить одни цифры, не длиннее 11</td>
+            <td>показать <code>+7 (999) 123-45-67</code> при значении <code>79991234567</code></td></tr>
+        <tr><td>Чем</td><td>фильтр в <code>onValueChange</code> или <code>InputTransformation</code></td>
+            <td><code>VisualTransformation</code> или <code>OutputTransformation</code></td></tr>
+        <tr><td>Что уйдет на сервер</td><td colspan="2">то, что в состоянии: чистые цифры в обоих случаях</td></tr>
+      </table>
+      </div>
+
+      <h3>Фильтрация: что можно ввести</h3>
+
+<pre class="good"><code>OutlinedTextField(
+    value = phone,
+    onValueChange = { input -&gt;
+        phone = input.filter { it.isDigit() }.take(PHONE_LENGTH)   // лишнее просто не доедет
+    },
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+)</code></pre>
+
+      <p class="prose">Фильтр обязан быть <b>идемпотентным и разрешать удаление</b>. Самая частая
+      ошибка — условие, которое запрещает присвоение целиком:</p>
+
+<pre class="bad"><code>onValueChange = { input -&gt;
+    if (input.length == CODE_LENGTH) code = input      // стереть символ невозможно:
+}                                                      // строка короче условия не проходит</code></pre>
+
+<pre class="bad"><code>onValueChange = { input -&gt;
+    if (input.all { it.isDigit() }) phone = input      // вставка «+7 999…» из буфера
+}                                                      // отбрасывается целиком, молча</code></pre>
+
+<pre class="good"><code>onValueChange = { input -&gt;
+    phone = input.filter { it.isDigit() }.take(PHONE_LENGTH)   // из вставки берем то, что подходит
+}</code></pre>
+
+      <p class="why">Разница принципиальная: <code>filter</code> <b>чистит</b> ввод, а <code>if</code>
+      его <b>отвергает</b>. Пользователь, вставляющий номер из мессенджера, видит в первом случае
+      номер, во втором — ничего, и не понимает почему.</p>
+
+      <h3>Маска: как устроен VisualTransformation</h3>
+
+      <p class="prose">У интерфейса один метод, который возвращает две вещи:</p>
+
+<pre><code>fun interface VisualTransformation {
+    fun filter(text: AnnotatedString): TransformedText
+}
+
+class TransformedText(
+    val text: AnnotatedString,        // что показать на экране
+    val offsetMapping: OffsetMapping  // как пересчитать позиции курсора между строками
+)</code></pre>
+
+      <p class="prose">Вся сложность — во втором. Строки разной длины, а курсор и выделение
+      существуют в обеих:</p>
+
+      <pre class="ascii"><code>значение:     7  9  9  9  1  2  3  4  5  6  7          11 символов
+              │  │  │  │  │  │  │  │  │  │  │
+показано:  +  7     (  9  9  9  )     1  2  3  -  4  5  -  6  7    18 символов
+
+пользователь ставит курсор после «999» на экране — позиция 7
+в значении это позиция 4. Пересчет в обе стороны и есть OffsetMapping</code></pre>
+
+      <div class="note strict">
+        <span class="tag">Почему это падает</span>
+        <p>Если <code>OffsetMapping</code> вернет позицию за пределами строки, поле упадет с
+        <code>IndexOutOfBoundsException</code> в момент установки курсора — не при вводе, а при тапе в
+        конкретное место. Такой баг легко не заметить в тестах: на обычном наборе с конца строки он не
+        воспроизводится.</p>
+      </div>
+
+      <p class="filename">PhoneVisualTransformation.kt — маска, которая не ломает курсор</p>
+<pre class="good"><code>private const val PHONE_MASK = "+# (###) ###-##-##"
+
+class PhoneVisualTransformation : VisualTransformation {
+
+    override fun filter(text: AnnotatedString): TransformedText {
+        val digits = text.text.filter { it.isDigit() }
+        val formatted = format(digits = digits)
+
+        val mapping = object : OffsetMapping {
+            // из позиции в значении — в позицию на экране
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset &lt;= 0) return 0
+                var seen = 0
+                formatted.forEachIndexed { index, char -&gt;
+                    if (char.isDigit()) {
+                        seen++
+                        if (seen == offset) return index + 1
+                    }
+                }
+                return formatted.length
+            }
+
+            // обратно: сколько цифр стоит левее этой позиции на экране
+            override fun transformedToOriginal(offset: Int): Int =
+                formatted.take(offset.coerceIn(0, formatted.length)).count { it.isDigit() }
+        }
+
+        return TransformedText(text = AnnotatedString(formatted), offsetMapping = mapping)
+    }
+
+    private fun format(digits: String): String {
+        if (digits.isEmpty()) return ""
+        return buildString {
+            var digitIndex = 0
+            for (char in PHONE_MASK) {
+                if (digitIndex &gt;= digits.length) break
+                if (char == '#') append(digits[digitIndex++]) else append(char)
+            }
+        }
+    }
+}</code></pre>
+
+      <p class="why">Маппинг здесь <b>считает цифры</b>, а не складывает подобранные числа
+      (<code>offset + 4</code>, <code>offset + 6</code> и так далее). Это важно: подобранные сдвиги
+      придется пересчитывать при любой правке маски, и ошибка в одном из них даст падение на одной
+      конкретной позиции курсора.</p>
+
+      <p class="prose">Готовая маска в библиотеке ровно одна — для пароля, и устроена она так же:</p>
+
+<pre><code>OutlinedTextField(
+    value = password,
+    onValueChange = { password = it },
+    visualTransformation = PasswordVisualTransformation(),   // точки вместо символов
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+)</code></pre>
+
+      <h3>Маска в новом API: OutputTransformation</h3>
+
+      <p class="prose">В API со <code>TextFieldState</code> маппинг писать не нужно — ты правишь буфер,
+      а пересчет позиций рантайм делает сам:</p>
+
+<pre class="good"><code>val state = rememberTextFieldState()
+
+BasicTextField(
+    state = state,
+    inputTransformation = InputTransformation.maxLength(PHONE_LENGTH),   // фильтрация
+    outputTransformation = PhoneOutputTransformation,                    // маска
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+)
+
+private object PhoneOutputTransformation : OutputTransformation {
+    override fun TextFieldBuffer.transformOutput() {
+        if (length &gt; 0) insert(0, "+")
+        if (length &gt; 2) insert(2, " (")
+        if (length &gt; 7) insert(7, ") ")
+        if (length &gt; 12) insert(12, "-")
+        if (length &gt; 15) insert(15, "-")
+    }
+}</code></pre>
+
+      <p class="why">Каждая вставка сдвигает последующие индексы — поэтому проверки идут по уже
+      изменившейся длине. Имена методов между версиями менялись, сверяйся с той, что стоит в проекте.</p>
+
+      <h3>Денежное поле: где обычно ошибаются</h3>
+
+<pre class="bad"><code>// значение хранит отформатированную строку
+onValueChange = { input -&gt;
+    amount = formatWithSpaces(input)      // "1 234" в состоянии
+}
+// перед отправкой приходится чистить в каждом месте вызова
+repository.pay(amount = amount.replace(" ", "").toLong())</code></pre>
+
+<pre class="good"><code>var amount by rememberSaveable { mutableStateOf("") }          // "1234" — чистое значение
+
+OutlinedTextField(
+    value = amount,
+    onValueChange = { input -&gt; amount = input.filter { it.isDigit() }.take(AMOUNT_MAX_DIGITS) },
+    visualTransformation = ThousandsVisualTransformation(),     // "1 234" только на экране
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+)</code></pre>
+
+      <div class="note">
+        <span class="tag">Дробная часть и локаль</span>
+        <p>Если поле принимает копейки, разделитель зависит от локали клавиатуры: на русской это
+        запятая, на английской — точка. Принимать нужно оба символа и нормализовать при чтении, а
+        <code>KeyboardType.Decimal</code> ставить вместо <code>Number</code> — иначе на части
+        клавиатур разделителя просто не будет на экране.</p>
+      </div>
+
+      <h3>Что выбрать</h3>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Задача</th><th>Инструмент</th></tr>
+        <tr><td>Только цифры, ограничение длины</td><td>фильтр в <code>onValueChange</code> / <code>InputTransformation</code></td></tr>
+        <tr><td>Телефон, карта, дата с разделителями</td><td><code>VisualTransformation</code> / <code>OutputTransformation</code></td></tr>
+        <tr><td>Пароль точками</td><td><code>PasswordVisualTransformation()</code></td></tr>
+        <tr><td>Разделители тысяч</td><td><code>VisualTransformation</code>, значение остается чистым</td></tr>
+        <tr><td>Верхний регистр, запрет пробелов</td><td>фильтр: <code>input.uppercase()</code>, <code>input.filterNot { it.isWhitespace() }</code></td></tr>
+        <tr><td>Автоподстановка разделителя прямо в значение</td><td>не делать: это кейс 2 с прыгающим курсором</td></tr>
+      </table>
+      </div>
+
+      <p class="why">Правило, к которому все сводится: <b>в состоянии лежит то, что уйдет на сервер</b>.
+      Все, что добавлено для читаемости — скобки, пробелы, дефисы, точки пароля, — живет на слое
+      отображения и в значение не попадает.</p>
+
+      <h2 id="t7"><span class="num">07</span> Ошибки и подписи</h2>
+
+<pre class="good"><code>OutlinedTextField(
+    value = email,
+    onValueChange = { email = it },
+    label = { Text(text = "Почта") },              // уезжает наверх при вводе, не исчезает
+    placeholder = { Text(text = "name@mail.ru") }, // пример, исчезает при первом символе
+    isError = state.emailError != null,
+    supportingText = {                             // место под подпись зарезервировано всегда
+        Text(text = state.emailError ?: "Понадобится для чека")
+    },
+    singleLine = true
+)</code></pre>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Слот</th><th>Роль</th><th>Ошибка при использовании</th></tr>
+        <tr><td class="mono">label</td><td>что это за поле</td><td>заменять им placeholder: при вводе подпись уезжает, и смысл поля теряется</td></tr>
+        <tr><td class="mono">placeholder</td><td>пример значения</td><td>писать в него название поля — исчезнет после первой буквы</td></tr>
+        <tr><td class="mono">supportingText</td><td>подсказка или текст ошибки</td><td>показывать только при ошибке: высота поля скачет</td></tr>
+        <tr><td class="mono">isError</td><td>красит рамку, label и подпись</td><td>красить цвета руками вместо него</td></tr>
+      </table>
+      </div>
+
+      <h2 id="t8"><span class="num">08</span> Дерево решений</h2>
+
+      <pre class="ascii"><code>Нужно поле ввода. Какое?
+│
+├─ обычная форма: label, ошибка, подсказка
+│    ├─ поля идут подряд, нужна четкая граница → OutlinedTextField
+│    └─ поле одно внутри блока                 → TextField
+│
+├─ оформление свое: поиск в шапке, код из SMS, чат
+│    └─ BasicTextField + свой decorationBox
+│
+└─ что хранить?
+     ├─ текст меняется только пользователем      → String
+     ├─ текст правится программно, есть маска    → TextFieldValue
+     └─ новый код, нужна фильтрация ввода        → TextFieldState</code></pre>
+
+      <div class="part" id="p2">
+        <span class="k">Часть II</span>
+        <h2>Восемь кейсов</h2>
+        <p>Задача, код как его пишут, что видит пользователь, объяснение через разделы части I и
+        правильный вариант.</p>
+      </div>
+
+      <section class="case" id="c1">
+        <h3>Кейс 1. Поле не печатает</h3>
+        <p class="task">Форма промокода: одно поле и кнопка «Применить».</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun PromoCodeField(onApply: (String) -&gt; Unit) {
+    var code by mutableStateOf("")            // забыли remember
+
+    OutlinedTextField(
+        value = code,
+        onValueChange = { code = it },
+        label = { Text(text = "Промокод") }
+    )
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Клавиатура открылась, нажатия проходят</li>
+          <li class="hit">В поле не появляется ни одного символа</li>
+          <li class="hit">Иногда первая буква мелькает и пропадает</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Петля из раздела 02 разомкнута в самом начале: <code>mutableStateOf</code> без
+        <code>remember</code> пересоздается на каждой рекомпозиции, а ввод эту рекомпозицию и
+        запускает. Значение записалось — и тут же потерялось вместе с состоянием.</p>
+        <p>Второй способ разомкнуть ту же петлю — пустой обработчик:</p>
+<pre class="bad"><code>OutlinedTextField(value = code, onValueChange = { })   // поле навсегда останется пустым</code></pre>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>var code by rememberSaveable { mutableStateOf("") }</code></pre>
+
+        <div class="rule"><b>Правило</b>Поле не печатает — смотри петлю: состояние под
+        <code>remember</code> и <code>onValueChange</code>, который это состояние меняет.</div>
+      </section>
+
+      <section class="case" id="c2">
+        <h3>Кейс 2. Курсор прыгает в конец строки</h3>
+        <p class="task">Поле телефона с маской: пользователь должен видеть <code>+7 (999) 123-45-67</code>.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>var phone by rememberSaveable { mutableStateOf("") }
+
+OutlinedTextField(
+    value = formatPhone(phone),                       // форматируем прямо в value
+    onValueChange = { input -&gt;
+        phone = input.filter { it.isDigit() }         // а храним цифры
+    },
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Ввел номер до конца — выглядит правильно</li>
+          <li>Заметил опечатку в середине, ткнул туда и стер цифру</li>
+          <li class="hit">Курсор мгновенно улетел в конец строки, следующая цифра дописалась не туда</li>
+          <li class="hit">Исправить номер в середине физически невозможно</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>В <code>value</code> уходит строка, которую поле не видело: длина изменилась, а позиции
+        курсора в <code>String</code> нет вообще (раздел 03). Поле вынуждено поставить курсор в
+        конец.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// маска — на отображении, состояние остается чистым
+OutlinedTextField(
+    value = phone,                                    // только цифры
+    onValueChange = { input -&gt;
+        phone = input.filter { it.isDigit() }.take(PHONE_LENGTH)
+    },
+    visualTransformation = PhoneVisualTransformation(),   // рисует +7 (999) 123-45-67
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+)</code></pre>
+        <p>Если текст все-таки правится программно — курсор нужно вести самому, и тогда состояние
+        хранится как <code>TextFieldValue</code>:</p>
+<pre class="good"><code>var field by remember { mutableStateOf(TextFieldValue("")) }
+
+OutlinedTextField(
+    value = field,
+    onValueChange = { new -&gt;
+        val digits = new.text.filter { it.isDigit() }
+        field = new.copy(
+            text = digits,
+            selection = TextRange(digits.length)      // курсор ставим осознанно
+        )
+    }
+)</code></pre>
+
+        <div class="rule"><b>Правило</b>В состоянии — чистое значение, форматирование — через
+        <code>VisualTransformation</code>. Текст правится программно — переходи на
+        <code>TextFieldValue</code> или <code>TextFieldState</code>.</div>
+      </section>
+
+      <section class="case" id="c3">
+        <h3>Кейс 3. Введенный адрес пропал</h3>
+        <p class="task">Форма доставки: город, улица, дом, комментарий курьеру.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>var street by remember { mutableStateOf("") }
+var house by remember { mutableStateOf("") }
+var comment by remember { mutableStateOf("") }</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Заполнил адрес, свернул приложение — уточнить номер дома в переписке</li>
+          <li class="hit">Вернулся: все поля пустые</li>
+          <li class="hit">То же самое при повороте экрана и при смене темы в шторке настроек</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>remember</code> живет столько же, сколько композиция. Поворот и пересоздание
+        <code>Activity</code> обнуляют слоты. Разбор в статье про
+        <a href="recomposition-and-remember.html">рекомпозицию</a>, кейс 2.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>// короткая форма: значения переживут поворот и смерть процесса
+var street by rememberSaveable { mutableStateOf("") }</code></pre>
+        <p>Форма из нескольких полей с валидацией и отправкой — уже состояние экрана, его место во
+        ViewModel:</p>
+<pre class="good"><code>@HiltViewModel
+class DeliveryViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    val street: StateFlow&lt;String&gt; = savedStateHandle.getStateFlow(key = STREET, initialValue = "")
+
+    fun onStreetChange(value: String) {
+        savedStateHandle[STREET] = value          // переживет и смерть процесса
+    }
+
+    private companion object { const val STREET = "street" }
+}</code></pre>
+
+        <div class="rule"><b>Правило</b>Все, что ввел пользователь руками, — минимум
+        <code>rememberSaveable</code>. Форма целиком — ViewModel с
+        <code>SavedStateHandle</code>.</div>
+      </section>
+
+      <section class="case" id="c4">
+        <h3>Кейс 4. Клавиатура закрывает поле</h3>
+        <p class="task">Экран отзыва: длинная форма, поле комментария внизу.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>Scaffold(topBar = { TopAppBar(title = { Text(text = "Отзыв") }) }) { innerPadding -&gt;
+    Column(modifier = Modifier.padding(innerPadding)) {
+        RatingStars(rating = state.rating, onRate = viewModel::onRate)
+        OutlinedTextField(
+            value = state.comment,
+            onValueChange = viewModel::onCommentChange,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(onClick = viewModel::send) { Text(text = "Отправить") }
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Нажал на поле комментария, открылась клавиатура</li>
+          <li class="hit">Поле и кнопка «Отправить» остались под клавиатурой — не видно, что печатаешь</li>
+          <li class="hit">Приходится закрывать клавиатуру, чтобы нажать кнопку</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Клавиатура не входит в отступы <code>Scaffold</code> по умолчанию, а контент сам вверх не
+        поднимается. Нужен <code>imePadding</code> — ровно один раз, иначе двойной отступ (разбор в
+        статье про <a href="scaffold.html">Scaffold</a>, кейс 7).</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>Scaffold(topBar = { … }) { innerPadding -&gt;
+    Column(
+        modifier = Modifier
+            .padding(innerPadding)
+            .consumeWindowInsets(innerPadding)
+            .imePadding()                              // единственное место
+            .verticalScroll(rememberScrollState())     // форма должна прокручиваться
+    ) { … }
+}</code></pre>
+        <p>Второй обязательный кусок — <code>android:windowSoftInputMode="adjustResize"</code> и
+        <code>enableEdgeToEdge()</code> в <code>Activity</code>: без них система не сообщит Compose о
+        клавиатуре.</p>
+
+        <div class="rule"><b>Правило</b>Экран с полем ввода проверяется с открытой клавиатурой на
+        коротком экране, а не только в эмуляторе с большим окном.</div>
+      </section>
+
+      <section class="case" id="c5">
+        <h3>Кейс 5. Ошибка загорается на первой букве</h3>
+        <p class="task">Поле почты с проверкой формата.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>var email by rememberSaveable { mutableStateOf("") }
+val isEmailValid = email.matches(EMAIL_REGEX)
+
+OutlinedTextField(
+    value = email,
+    onValueChange = { email = it },
+    isError = !isEmailValid,                            // проверка на каждый символ
+    supportingText = { if (!isEmailValid) Text(text = "Неверный формат почты") }
+)</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Начал вводить почту</li>
+          <li class="hit">После первой же буквы поле стало красным и закричало об ошибке</li>
+          <li class="hit">Ошибка держится, пока адрес не дописан до конца — ощущение, что все делаешь
+          не так</li>
+          <li class="hit">Высота поля скачет: подпись то появляется, то исчезает</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Валидация выполняется на каждом изменении, хотя проверять незаконченный ввод бессмысленно.
+        Правильный момент — потеря фокуса или попытка отправки.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>var email by rememberSaveable { mutableStateOf("") }
+var wasFocused by rememberSaveable { mutableStateOf(false) }
+var showError by rememberSaveable { mutableStateOf(false) }
+
+OutlinedTextField(
+    value = email,
+    onValueChange = {
+        email = it
+        showError = false                   // начал править — ошибку убираем
+    },
+    isError = showError,
+    supportingText = {
+        Text(text = if (showError) "Неверный формат почты" else "Пришлем на нее чек")
+    },
+    modifier = Modifier.onFocusChanged { focusState -&gt;
+        if (focusState.isFocused) {
+            wasFocused = true
+        } else if (wasFocused) {
+            showError = email.isNotEmpty() &amp;&amp; !email.matches(EMAIL_REGEX)   // проверяем на выходе
+        }
+    }
+)</code></pre>
+        <p>Подпись занимает место всегда — поэтому высота поля не скачет: в <code>supportingText</code>
+        либо подсказка, либо ошибка.</p>
+
+        <div class="rule"><b>Правило</b>Валидация — на потере фокуса и на отправке. На каждом символе
+        снимается только уже показанная ошибка.</div>
+      </section>
+
+      <section class="case" id="c6">
+        <h3>Кейс 6. Буквенная клавиатура для суммы</h3>
+        <p class="task">Перевод бонусов: поле суммы и поле телефона получателя.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Сумма") })
+OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Телефон") })
+Button(onClick = onSend) { Text(text = "Перевести") }</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li class="hit">Для суммы открывается обычная клавиатура — цифры приходится искать на втором
+          слое</li>
+          <li class="hit">На кнопке действия «Ввод», который переносит строку вместо перехода к
+          телефону</li>
+          <li class="hit">В сумму можно ввести буквы и запятую, запрос падает на сервере</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p><code>KeyboardOptions</code> не заданы, значит система показывает клавиатуру по умолчанию, а
+        <code>imeAction</code> остается <code>Default</code> (раздел 04). Фильтрации ввода тоже нет.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val focusManager = LocalFocusManager.current
+
+OutlinedTextField(
+    value = amount,
+    onValueChange = { input -&gt; amount = input.filter { it.isDigit() } },
+    label = { Text(text = "Сумма") },
+    singleLine = true,
+    keyboardOptions = KeyboardOptions(
+        keyboardType = KeyboardType.Number,
+        imeAction = ImeAction.Next
+    ),
+    keyboardActions = KeyboardActions(
+        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+    )
+)
+
+OutlinedTextField(
+    value = phone,
+    onValueChange = { phone = it },
+    label = { Text(text = "Телефон") },
+    singleLine = true,
+    keyboardOptions = KeyboardOptions(
+        keyboardType = KeyboardType.Phone,
+        imeAction = ImeAction.Done
+    ),
+    keyboardActions = KeyboardActions(
+        onDone = {
+            focusManager.clearFocus()       // клавиатура закроется
+            onSend()
+        }
+    )
+)</code></pre>
+
+        <div class="rule"><b>Правило</b>У каждого поля осознанные <code>keyboardType</code> и
+        <code>imeAction</code>. Последнее поле формы — <code>Done</code> с отправкой.</div>
+      </section>
+
+      <section class="case" id="c7">
+        <h3>Кейс 7. Автофокус не срабатывает</h3>
+        <p class="task">Экран ввода кода из SMS: поле должно быть в фокусе сразу, клавиатура открыта.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun CodeScreen(viewModel: CodeViewModel = hiltViewModel()) {
+    val focusRequester = remember { FocusRequester() }
+
+    focusRequester.requestFocus()          // прямо в теле composable
+
+    OutlinedTextField(
+        value = state.code,
+        onValueChange = viewModel::onCodeChange,
+        modifier = Modifier.focusRequester(focusRequester)
+    )
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li class="hit">Приложение падает с <code>IllegalStateException: FocusRequester is not
+          initialized</code></li>
+          <li class="hit">Либо не падает, но фокуса и клавиатуры нет — приходится тыкать в поле</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>В момент выполнения тела функции узел еще не в дереве: композиция только описывает, что
+        показать, а применение идет позже (фазы кадра). Запрос фокуса — это действие, а действиям место
+        в эффекте: <a href="side-effects.html">сайд-эффекты</a>, раздел 01.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>val focusRequester = remember { FocusRequester() }
+val keyboard = LocalSoftwareKeyboardController.current
+
+LaunchedEffect(Unit) {
+    focusRequester.requestFocus()
+    keyboard?.show()                       // на части устройств клавиатура сама не открывается
+}
+
+OutlinedTextField(
+    value = state.code,
+    onValueChange = viewModel::onCodeChange,
+    modifier = Modifier.focusRequester(focusRequester),
+    keyboardOptions = KeyboardOptions(
+        keyboardType = KeyboardType.NumberPassword,
+        imeAction = ImeAction.Done
+    )
+)</code></pre>
+
+        <div class="rule"><b>Правило</b><code>requestFocus()</code> — только из
+        <code>LaunchedEffect</code>, никогда из тела composable.</div>
+      </section>
+
+      <section class="case" id="c8">
+        <h3>Кейс 8. Ввод отстает от печати</h3>
+        <p class="task">Поиск по каталогу услуг: список фильтруется по мере ввода.</p>
+
+        <div class="lbl bad">Как пишут</div>
+<pre class="bad"><code>@Composable
+fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var query by remember { mutableStateOf("") }
+
+    Column {
+        CompanyHeader(company = state.company)              // перерисовывается на каждый символ
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                viewModel.search(it)                        // запрос на каждый символ
+            }
+        )
+        ServicesList(services = state.services.filter { it.name.contains(query) })
+    }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Начал набирать «маник…»</li>
+          <li class="hit">Буквы появляются с задержкой, иногда проглатываются</li>
+          <li class="hit">Список моргает, на сервер уходит шесть запросов подряд</li>
+          <li class="hit">Результат показывает не то, что введено: отвечает самый медленный запрос</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Две независимые причины. Первая — чтение <code>query</code> в теле экрана перезапускает
+        весь экран на каждый символ (рекомпозиция, кейс 6 той статьи). Вторая — запрос уходит без
+        задержки и без отмены предыдущего.</p>
+
+        <div class="lbl good">Как надо</div>
+<pre class="good"><code>@Composable
+fun SearchScreen(viewModel: SearchViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    Column {
+        CompanyHeader(company = state.company)
+        SearchSection(onQueryChange = viewModel::onQueryChange)   // состояние уехало вниз
+        ServicesList(services = state.services)
+    }
+}
+
+@Composable
+private fun SearchSection(onQueryChange: (String) -&gt; Unit) {
+    var query by rememberSaveable { mutableStateOf("") }
+
+    OutlinedTextField(
+        value = query,
+        onValueChange = {
+            query = it
+            onQueryChange(it)
+        },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
+}</code></pre>
+        <p class="filename">SearchViewModel.kt — задержка и отмена лишних запросов</p>
+<pre class="good"><code>private val query = MutableStateFlow("")
+
+fun onQueryChange(value: String) { query.value = value }
+
+val state: StateFlow&lt;SearchUiState&gt; = query
+    .debounce(300)                     // ждем паузу в наборе
+    .distinctUntilChanged()
+    .flatMapLatest { repository.search(query = it) }    // старый запрос отменяется
+    .map(SearchUiState::map)
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SearchUiState.EMPTY)</code></pre>
+
+        <div class="rule"><b>Правило</b>Поле поиска — своя маленькая composable плюс
+        <code>debounce</code> и <code>flatMapLatest</code> во ViewModel. Одного из двух всегда
+        мало.</div>
+      </section>
+
+      <section class="case" id="c9">
+        <h3>Кейс 9. Сервер вернул ошибку по полю, а пользователь ее ищет</h3>
+        <p class="task">Форма записи на услугу: имя, телефон, почта, комментарий. Часть проверок живет
+        на сервере — формат телефона, занятая почта, черный список. Ответ приходит с указанием, какое
+        именно поле не прошло.</p>
+
+        <div class="lbl bad">Как пишут</div>
+        <p class="filename">BookingViewModel.kt</p>
+<pre class="bad"><code>fun submit() {
+    viewModelScope.launch {
+        runCatching { repository.book(form = _state.value.form) }
+            .onFailure { error -&gt;
+                ensureActive()
+                _state.update { it.copy(errorMessage = error.messageOrDefault()) }   // просто текст
+            }
+    }
+}</code></pre>
+        <p class="filename">BookingScreen.kt</p>
+<pre class="bad"><code>LaunchedEffect(state.errorMessage) {
+    state.errorMessage?.let { snackbarHostState.showSnackbar(message = it) }
+}</code></pre>
+
+        <div class="lbl see">Что видит пользователь</div>
+        <ul class="story">
+          <li>Заполнил четыре поля, нажал «Записаться»</li>
+          <li class="hit">Снизу выехал снекбар «Неверный формат телефона» и через три секунды исчез</li>
+          <li class="hit">Какое поле править — приходится догадываться: ни одно не подсвечено</li>
+          <li class="hit">Телефон уже уехал вверх за экран, форма длинная — надо скроллить и искать</li>
+          <li class="hit">Повернул экран — снекбар выехал заново, хотя ничего не нажимал</li>
+        </ul>
+
+        <div class="lbl why">Почему</div>
+        <p>Серверный ответ знает, какое поле виновато, но эта связь теряется на границе: во ViewModel
+        она превращается в строку, а строка не умеет подсветить поле и уж тем более поставить в него
+        фокус. Плюс ошибка хранится как обычное состояние и не гасится — отсюда повтор после поворота
+        (та же ошибка, что в кейсе 6 статьи про <a href="side-effects.html">сайд-эффекты</a>).</p>
+
+        <div class="lbl good">Как надо</div>
+        <p class="prose">Три вещи: адресовать ошибку полю, дать каждому полю свой
+        <code>FocusRequester</code> и провести фокус как разовое событие.</p>
+
+        <p class="filename">BookingUiState.kt — ошибка адресована полю</p>
+<pre class="good"><code>enum class BookingField { NAME, PHONE, EMAIL, COMMENT }
+
+data class BookingUiState(
+    val form: BookingForm = BookingForm(),
+    val isSubmitting: Boolean = false,
+    val fieldErrors: Map&lt;BookingField, String&gt; = emptyMap(),   // что показать под полем
+    val focusTarget: BookingField? = null,                     // разовое событие: куда встать
+    val message: String? = null                                // ошибка без привязки к полю
+)</code></pre>
+
+        <p class="filename">BookingViewModel.kt — маппинг ответа сервера в поля формы</p>
+<pre class="good"><code>fun submit() {
+    if (_state.value.isSubmitting) return
+
+    viewModelScope.launch {
+        _state.update { it.copy(isSubmitting = true, fieldErrors = emptyMap()) }
+        runCatching { repository.book(form = _state.value.form) }
+            .onSuccess { … }
+            .onFailure { error -&gt;
+                ensureActive()
+                _state.update { it.copy(isSubmitting = false) }
+                handleError(error = error)
+            }
+    }
+}
+
+private fun handleError(error: Throwable) {
+    val validation = error as? ValidationException
+    val errors = validation?.fields.orEmpty()
+        .mapNotNull { (key, text) -&gt; key.toBookingField()?.let { it to text } }
+        .toMap()
+
+    if (errors.isEmpty()) {
+        _state.update { it.copy(message = error.messageOrDefault()) }   // поле неизвестно — общий текст
+        return
+    }
+
+    _state.update {
+        it.copy(
+            fieldErrors = errors,
+            focusTarget = FIELD_ORDER.first { field -&gt; field in errors }  // первое сверху, не любое
+        )
+    }
+}
+
+fun onFocusHandled() {
+    _state.update { it.copy(focusTarget = null) }     // событие погашено
+}
+
+private fun String.toBookingField(): BookingField? = when (this) {
+    "name" -&gt; BookingField.NAME
+    "phone" -&gt; BookingField.PHONE
+    "email" -&gt; BookingField.EMAIL
+    "comment" -&gt; BookingField.COMMENT
+    else -&gt; null                                      // сервер добавил новое поле — не падаем
+}
+
+private companion object {
+    val FIELD_ORDER = listOf(
+        BookingField.NAME, BookingField.PHONE, BookingField.EMAIL, BookingField.COMMENT
+    )
+}</code></pre>
+
+        <p class="filename">BookingScreen.kt — реквестер на каждое поле</p>
+<pre class="good"><code>@Composable
+fun BookingScreen(viewModel: BookingViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
+
+    // по реквестеру на поле: ключ — тот же enum, что и в ошибках
+    val requesters = remember { BookingField.entries.associateWith { FocusRequester() } }
+
+    LaunchedEffect(state.focusTarget) {
+        val target = state.focusTarget ?: return@LaunchedEffect
+        requesters[target]?.requestFocus()     // Column со scroll сам подкрутит поле в зону видимости
+        viewModel.onFocusHandled()             // гасим событие: поворот не повторит прыжок
+    }
+
+    Column(
+        modifier = Modifier
+            .verticalScroll(scrollState)
+            .imePadding()
+    ) {
+        BookingTextField(
+            value = state.form.name,
+            onValueChange = viewModel::onNameChange,
+            label = "Имя",
+            error = state.fieldErrors[BookingField.NAME],
+            focusRequester = requesters.getValue(BookingField.NAME)
+        )
+        BookingTextField(
+            value = state.form.phone,
+            onValueChange = viewModel::onPhoneChange,
+            label = "Телефон",
+            error = state.fieldErrors[BookingField.PHONE],
+            focusRequester = requesters.getValue(BookingField.PHONE),
+            keyboardType = KeyboardType.Phone
+        )
+        …
+    }
+}
+
+@Composable
+private fun BookingTextField(
+    value: String,
+    onValueChange: (String) -&gt; Unit,
+    label: String,
+    error: String?,
+    focusRequester: FocusRequester,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(text = label) },
+        isError = error != null,                    // рамка, подпись и label краснеют сами
+        supportingText = { if (error != null) Text(text = error) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
+        modifier = modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+    )
+}</code></pre>
+
+        <p class="prose">Что здесь сделано и зачем каждый кусок:</p>
+
+        <div class="scroll">
+        <table>
+          <tr><th>Решение</th><th>Что оно закрывает</th></tr>
+          <tr><td><code>enum BookingField</code> как ключ</td>
+              <td>Связь «ответ сервера → поле формы» не теряется и проверяется компилятором. Строки
+              <code>"phone"</code> живут в одном месте — в маппере</td></tr>
+          <tr><td><code>fieldErrors: Map</code></td>
+              <td>Ошибка видна под своим полем, а не в исчезающем снекбаре. Сервер может вернуть
+              несколько ошибок сразу — покажутся все</td></tr>
+          <tr><td><code>focusTarget</code> отдельно от <code>fieldErrors</code></td>
+              <td>Подсветка — состояние, оно должно пережить поворот. Прыжок фокуса — событие, оно
+              повторяться не должно</td></tr>
+          <tr><td><code>onFocusHandled()</code></td>
+              <td>Гасит событие сразу после обработки</td></tr>
+          <tr><td><code>FIELD_ORDER.first { … }</code></td>
+              <td>Если ошибок несколько, фокус встает в верхнюю по форме, а не в случайную из
+              <code>Map</code></td></tr>
+          <tr><td><code>verticalScroll</code> у формы</td>
+              <td>При установке фокуса прокручиваемый контейнер сам подводит поле в зону видимости</td></tr>
+          <tr><td><code>else -&gt; null</code> в маппере</td>
+              <td>Сервер добавил поле, которого нет в приложении, — показываем общий текст вместо
+              падения</td></tr>
+        </table>
+        </div>
+
+        <div class="note">
+          <span class="tag">Если форма в LazyColumn</span>
+          <p>Тогда поля за экраном не существуют в композиции, и <code>requestFocus()</code> у них
+          вызвать некому. Порядок другой: сначала <code>listState.animateScrollToItem(index)</code>
+          для нужного поля, и только потом запрос фокуса — на следующем кадре, когда элемент уже
+          создан. Проще этого избежать: форма из четырех полей не нуждается в ленивом списке.</p>
+        </div>
+
+        <div class="rule"><b>Правило</b>Ошибка от сервера адресуется полю, а не экрану. Подсветка —
+        состояние, фокус — разовое событие с гашением.</div>
+      </section>
+
+      <h2 id="ref">Справочник</h2>
+
+      <div class="scroll">
+      <table>
+        <tr><th>Что видит пользователь</th><th>Причина</th><th>Кейс</th></tr>
+        <tr><td>Поле не печатает</td><td>разомкнутая петля value / onValueChange</td><td class="num">1</td></tr>
+        <tr><td>Курсор улетает в конец</td><td>форматирование в value при хранении String</td><td class="num">2</td></tr>
+        <tr><td>Текст пропал после сворачивания</td><td><code>remember</code> вместо <code>rememberSaveable</code></td><td class="num">3</td></tr>
+        <tr><td>Клавиатура закрывает поле и кнопку</td><td>нет <code>imePadding</code> и прокрутки</td><td class="num">4</td></tr>
+        <tr><td>Красная ошибка с первой буквы</td><td>валидация на каждый символ</td><td class="num">5</td></tr>
+        <tr><td>Не та клавиатура, «Ввод» вместо перехода</td><td>не заданы <code>KeyboardOptions</code></td><td class="num">6</td></tr>
+        <tr><td>Падение FocusRequester is not initialized</td><td><code>requestFocus</code> в теле composable</td><td class="num">7</td></tr>
+        <tr><td>Ввод отстает, запрос на каждый символ</td><td>состояние читается высоко, нет debounce</td><td class="num">8</td></tr>
+        <tr><td>Ошибка в снекбаре, поле искать самому</td><td>ошибка не адресована полю, фокус не переставлен</td><td class="num">9</td></tr>
+      </table>
+      </div>
+
+      <h3>Чеклист ревью</h3>
+
+      <ol class="steps">
+        <li>Состояние поля под <code>rememberSaveable</code>, форма целиком — во ViewModel.</li>
+        <li>В состоянии чистое значение, форматирование — <code>VisualTransformation</code>.</li>
+        <li>Заданы <code>keyboardType</code> и <code>imeAction</code>, последнее поле отправляет форму.</li>
+        <li><code>singleLine = true</code> везде, где перенос строки не нужен.</li>
+        <li>Валидация на потере фокуса, а не на каждом символе; место под подпись зарезервировано.</li>
+        <li><code>requestFocus()</code> — из <code>LaunchedEffect</code>.</li>
+        <li>Экран проверен с открытой клавиатурой: поле и кнопка видны.</li>
+        <li>Поиск: своя composable для поля плюс <code>debounce</code> и <code>flatMapLatest</code>.</li>
+        <li>Ошибки от сервера привязаны к полям формы, а не показаны одним текстом; фокус встает в
+        первое непрошедшее поле.</li>
+      </ol>
+
+      <div class="note ok">
+        <span class="tag">Итог</span>
+        <p>Поле ввода ничего не хранит: оно показывает переданное значение и сообщает о попытке ввода.
+        Почти все ошибки — это либо разомкнутая петля «value → onValueChange → value», либо попытка
+        поправить текст на лету без учета курсора, либо забытые настройки клавиатуры и фокуса, которые
+        поле само не угадывает.</p>
+      </div>
+
+    </main>
+  </div>
+
+  <footer>11.09.2026 · Соседние статьи: <a href="buttons.html">кнопки</a> · <a href="side-effects.html">сайд-эффекты</a> · <a href="recomposition-and-remember.html">рекомпозиция</a></footer>
+</div>
+</body>
+</html>
